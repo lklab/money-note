@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -35,19 +36,19 @@ class _MainPageState extends State<MainPage> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '홈',
+            icon: FaIcon(FontAwesomeIcons.wallet),
+            label: '자산',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: '검색',
+            icon: FaIcon(FontAwesomeIcons.rectangleList),
+            label: '내역',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: '알림',
+            icon: FaIcon(FontAwesomeIcons.chartPie),
+            label: '예산',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+            icon: FaIcon(FontAwesomeIcons.gear),
             label: '설정',
           ),
         ],
