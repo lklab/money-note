@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:money_note_flutter/data/asset_storage.dart';
 import 'package:money_note_flutter/pages/main_page.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final storage = AssetStorage.instance;
+  await storage.load();
+
   runApp(
     ProviderScope(
       child: MainApp(),
