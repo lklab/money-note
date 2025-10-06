@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:money_note_flutter/pages/asset_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -13,7 +14,7 @@ class _MainPageState extends State<MainPage> {
 
   // 표시할 화면 목록
   final List<Widget> _pages = const [
-    Center(child: Text('홈 화면', style: TextStyle(fontSize: 24))),
+    AssetPage(),
     Center(child: Text('검색 화면', style: TextStyle(fontSize: 24))),
     Center(child: Text('알림 화면', style: TextStyle(fontSize: 24))),
     Center(child: Text('설정 화면', style: TextStyle(fontSize: 24))),
