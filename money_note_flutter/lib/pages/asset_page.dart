@@ -1,8 +1,10 @@
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:money_note_flutter/data/asset_storage.dart';
+import 'package:money_note_flutter/data/record_storage.dart';
 import 'package:money_note_flutter/pages/asset_edit_page.dart';
 import 'package:money_note_flutter/pages/asset_group_edit_page.dart';
 import 'package:money_note_flutter/utils/utils.dart';
@@ -10,19 +12,50 @@ import 'package:money_note_flutter/widgets/asset_group_item.dart';
 import 'package:money_note_flutter/widgets/asset_item.dart';
 
 class AssetPage extends StatefulWidget {
-  const AssetPage({super.key});
+  final int index;
+  final ValueListenable<int> indexListenable;
+
+  const AssetPage({
+    super.key,
+    required this.index,
+    required this.indexListenable,
+  });
 
   @override
   State<AssetPage> createState() => _AssetPageState();
 }
 
 class _AssetPageState extends State<AssetPage> {
+  late int _lastIndex;
+  late final VoidCallback _listener;
+
   List<DragAndDropList> _lists = [];
+  int _closing = 0;
 
   @override
   void initState() {
     super.initState();
+
+    _lastIndex = widget.indexListenable.value;
+    _listener = () {
+      final now = widget.indexListenable.value;
+      if (now == widget.index && _lastIndex != now) {
+        _updateClosing();
+      }
+      // if (_lastIndex == widget.index && now != widget.index) {
+      // }
+      _lastIndex = now;
+    };
+    widget.indexListenable.addListener(_listener);
+
     _updateLists();
+    _updateClosing();
+  }
+
+  @override
+  void dispose() {
+    widget.indexListenable.removeListener(_listener);
+    super.dispose();
   }
 
   void _updateLists() {
@@ -65,11 +98,18 @@ class _AssetPageState extends State<AssetPage> {
     }
   }
 
+  void _updateClosing() async {
+    debugPrint('@@@ _updateClosing');
+    final closing = await RecordStorage().getClosingOfMonth(DateTime.now());
+    setState(() {
+      _closing = closing;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     int totalAmount = 0;
     int trackingAmount = 0;
-    int calculatedAmount = 0;
 
     for (AssetGroup group in AssetStorage.instance.groups) {
       for (Asset asset in group.assets) {
@@ -81,7 +121,7 @@ class _AssetPageState extends State<AssetPage> {
     }
 
     final labels = ['총자산','총현금','장부상 현금','차액'];
-    final totals = [totalAmount, trackingAmount, calculatedAmount, trackingAmount - calculatedAmount];
+    final totals = [totalAmount, trackingAmount, _closing, trackingAmount - _closing];
 
     return Scaffold(
       body: Column(

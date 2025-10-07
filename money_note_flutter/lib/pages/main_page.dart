@@ -10,31 +10,29 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 0;
-
-  // 표시할 화면 목록
-  final List<Widget> _pages = const [
-    AssetPage(),
-    Center(child: Text('검색 화면', style: TextStyle(fontSize: 24))),
-    Center(child: Text('알림 화면', style: TextStyle(fontSize: 24))),
-    Center(child: Text('설정 화면', style: TextStyle(fontSize: 24))),
-  ];
+  final currentIndex = ValueNotifier<int>(0);
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> pages = [
+      AssetPage(index: 0, indexListenable: currentIndex),
+      Center(child: Text('검색 화면', style: TextStyle(fontSize: 24))),
+      Center(child: Text('알림 화면', style: TextStyle(fontSize: 24))),
+      Center(child: Text('설정 화면', style: TextStyle(fontSize: 24))),
+    ];
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
-          index: _selectedIndex,
-          children: _pages,
+          index: currentIndex.value,
+          children: pages,
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // 4개 이상일 때 필수
-        currentIndex: _selectedIndex,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: currentIndex.value,
         onTap: (index) {
           setState(() {
-            _selectedIndex = index;
+            currentIndex.value = index;
           });
         },
         items: const [
