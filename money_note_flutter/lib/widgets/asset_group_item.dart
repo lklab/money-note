@@ -13,8 +13,14 @@ class AssetGroupItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int sum = 0;
+    for (Asset asset in assetGroup.assets) {
+      sum += asset.amount;
+    }
+
     return ListTile(
-      title: Text(assetGroup.name),
+      title: Text('+ ${assetGroup.name}'),
+      trailing: Text('$sum'),
       onTap: onTab != null ? () {
         onTab!(assetGroup);
       } : null,

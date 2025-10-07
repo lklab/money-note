@@ -15,6 +15,26 @@ class AssetItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(asset.name),
+      trailing: TextButton(
+        onPressed: () {
+        },
+        style: ButtonStyle(
+          alignment: Alignment.centerRight,
+          minimumSize: WidgetStatePropertyAll(
+            Size(50, 36),   // ⬅️ 최소 가로/세로
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+        ),
+        child: Text(
+          '${asset.amount}',
+          textAlign: TextAlign.right,
+        ),
+      ),
       onTap: onTab != null ? () {
         onTab!(asset);
       } : null,
