@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:money_note_flutter/data/asset_storage.dart';
 import 'package:money_note_flutter/pages/asset_edit_page.dart';
 import 'package:money_note_flutter/pages/asset_group_edit_page.dart';
+import 'package:money_note_flutter/utils/utils.dart';
 import 'package:money_note_flutter/widgets/asset_group_item.dart';
 import 'package:money_note_flutter/widgets/asset_item.dart';
 
@@ -51,17 +52,36 @@ class _AssetPageState extends State<AssetPage> {
               ),
             )
           ],
-        ),
+          contentsWhenEmpty: Builder(
+            builder: (ctx) => Text(
+              '자산이 없습니다.',
+              style: Theme.of(ctx).textTheme.bodyMedium!.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        )
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cells = [
-      '자산','현금','장부상 현금','차액',
-      '999,999,999,999','B2','B3','B4',
-    ];
+    int totalAmount = 0;
+    int trackingAmount = 0;
+    int calculatedAmount = 0;
+
+    for (AssetGroup group in AssetStorage.instance.groups) {
+      for (Asset asset in group.assets) {
+        totalAmount += asset.amount;
+        if (asset.tracking) {
+          trackingAmount += asset.amount;
+        }
+      }
+    }
+
+    final labels = ['총자산','총현금','장부상 현금','차액'];
+    final totals = [totalAmount, trackingAmount, calculatedAmount, trackingAmount - calculatedAmount];
 
     return Scaffold(
       body: Column(
@@ -75,18 +95,21 @@ class _AssetPageState extends State<AssetPage> {
             },
             border: TableBorder.all(
               color: Theme.of(context).colorScheme.surface,
-              width: 2.0,
+              width: 1.0,
             ),
             children: [
               TableRow(
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer),
                 children: List.generate(4, (col) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-                    child: Text(
-                      cells[col],
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        labels[col],
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ),
                   );
                 }),
@@ -94,19 +117,24 @@ class _AssetPageState extends State<AssetPage> {
               TableRow(
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer),
                 children: List.generate(4, (col) {
-                  final idx = 4 + col;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-                    child: Text(
-                      cells[idx],
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        Utils.formatMoney(totals[col]),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: Utils.getMoneyColor(totals[col]),
+                        ),
+                      ),
                     ),
                   );
                 }),
               ),
             ],
           ),
+          SizedBox(height: 16.0),
           Expanded(
             child: DragAndDropLists(
               children: _lists,
@@ -144,7 +172,8 @@ class _AssetPageState extends State<AssetPage> {
                   _updateLists();
                 });
               },
-              listPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              listPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              lastListTargetSize: 64.0,
               itemDecorationWhileDragging: BoxDecoration(
                 color: Theme.of(context).colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(8),

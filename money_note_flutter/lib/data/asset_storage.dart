@@ -6,10 +6,6 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
-/// TODO
-/// 로드 시 그룹 없으면 기본 그룹 하나 추가
-/// 마지막 그룹은 삭제할 수 없음
-
 /// ===== 모델 =====
 
 class Asset {
@@ -175,6 +171,7 @@ class AssetStorage {
       _groups.clear();
       _nextId = 1;
     }
+
     _loaded = true;
   }
 

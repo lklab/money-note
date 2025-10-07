@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:money_note_flutter/utils/style.dart';
 
 class CalculatorPage extends StatefulWidget {
   /// 초기 숫자값(선택). 존재하면 입력식에 미리 채워집니다.
@@ -95,9 +96,15 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   void _pressOperator(String op) {
     setState(() {
-      if (_endsWithOperator) return; // 연속 연산자 금지
-      if (_tokens.last == '(') return; // 여는 괄호 뒤 연산자 금지
-      if ((op == '×' || op == '÷') && _tokens.isEmpty) return;
+      if (_tokens.isEmpty) {
+        if (op == '×' || op == '÷') {
+          return;
+        }
+      }
+      else {
+        if (_endsWithOperator) return; // 연속 연산자 금지
+        if (_tokens.last == '(') return; // 여는 괄호 뒤 연산자 금지
+      }
       _tokens.add(op);
     });
   }
@@ -253,21 +260,20 @@ class _CalculatorPageState extends State<CalculatorPage> {
     }
   }
 
-  ButtonStyle get _roundedBtnStyle => ButtonStyle(
-    shape: WidgetStatePropertyAll(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    backgroundColor: WidgetStatePropertyAll(Theme.of(context).colorScheme.primaryContainer),
-  );
-
-  Widget _buildKey(String label, {VoidCallback? onTap, Color? color}) {
+  Widget _buildKey(String label, {VoidCallback? onTap, bool isAccent = false}) {
     return SizedBox(
       height: _kBtnH,
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(2),
         child: FilledButton(
           onPressed: onTap,
-          style: _roundedBtnStyle,
+          style: Style.buttonStyle.copyWith(
+            backgroundColor: WidgetStatePropertyAll(
+              isAccent ?
+                Theme.of(context).colorScheme.secondaryContainer :
+                Theme.of(context).colorScheme.primaryContainer
+            )
+          ),
           child: Text(
             label,
             style: TextStyle(
@@ -330,34 +336,34 @@ class _CalculatorPageState extends State<CalculatorPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(children: [
-                    Expanded(child: _buildKey('C', onTap: _pressClearAll, color: Colors.orangeAccent)),
-                    Expanded(child: _buildKey('()', onTap: _pressParenSmart)),
-                    Expanded(child: _buildKey('⌫', onTap: _pressBackspace, color: Colors.orangeAccent)),
-                    Expanded(child: _buildKey('÷', onTap: () => _pressOperator('÷'))),
+                    Expanded(child: _buildKey('C', onTap: _pressClearAll, isAccent: true)),
+                    Expanded(child: _buildKey('()', onTap: _pressParenSmart, isAccent: true)),
+                    Expanded(child: _buildKey('⌫', onTap: _pressBackspace, isAccent: true)),
+                    Expanded(child: _buildKey('÷', onTap: () => _pressOperator('÷'), isAccent: true)),
                   ]),
                   Row(children: [
                     Expanded(child: _buildKey('7', onTap: () => _pressDigit('7'))),
                     Expanded(child: _buildKey('8', onTap: () => _pressDigit('8'))),
                     Expanded(child: _buildKey('9', onTap: () => _pressDigit('9'))),
-                    Expanded(child: _buildKey('×', onTap: () => _pressOperator('×'))),
+                    Expanded(child: _buildKey('×', onTap: () => _pressOperator('×'), isAccent: true)),
                   ]),
                   Row(children: [
                     Expanded(child: _buildKey('4', onTap: () => _pressDigit('4'))),
                     Expanded(child: _buildKey('5', onTap: () => _pressDigit('5'))),
                     Expanded(child: _buildKey('6', onTap: () => _pressDigit('6'))),
-                    Expanded(child: _buildKey('-', onTap: () => _pressOperator('-'))),
+                    Expanded(child: _buildKey('-', onTap: () => _pressOperator('-'), isAccent: true)),
                   ]),
                   Row(children: [
                     Expanded(child: _buildKey('1', onTap: () => _pressDigit('1'))),
                     Expanded(child: _buildKey('2', onTap: () => _pressDigit('2'))),
                     Expanded(child: _buildKey('3', onTap: () => _pressDigit('3'))),
-                    Expanded(child: _buildKey('+', onTap: () => _pressOperator('+'))),
+                    Expanded(child: _buildKey('+', onTap: () => _pressOperator('+'), isAccent: true)),
                   ]),
                   Row(children: [
                     const Expanded(child: SizedBox.shrink()),
                     Expanded(child: _buildKey('0', onTap: () => _pressDigit('0'))),
                     const Expanded(child: SizedBox.shrink()),
-                    Expanded(child: _buildKey('확인', onTap: _pressConfirm, color: Colors.lightGreen)),
+                    Expanded(child: _buildKey('확인', onTap: _pressConfirm, isAccent: true)),
                   ]),
                 ],
               ),
