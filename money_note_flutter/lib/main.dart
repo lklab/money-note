@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_note_flutter/data/asset_storage.dart';
+import 'package:money_note_flutter/data/record_storage.dart';
 import 'package:money_note_flutter/pages/main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _initStroages();
 
+  runApp(
+    ProviderScope(
+      child: MainApp(),
+    ),
+  );
+  }
+
+Future _initStroages() async {
   final assetStorage = AssetStorage.instance;
   await assetStorage.load();
 
@@ -13,11 +23,7 @@ void main() async {
     await assetStorage.addGroup('새 그룹');
   }
 
-  runApp(
-    ProviderScope(
-      child: MainApp(),
-    ),
-  );
+  await RecordStorage().init();
 }
 
 class MainApp extends ConsumerStatefulWidget {
