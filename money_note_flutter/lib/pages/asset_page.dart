@@ -32,18 +32,10 @@ class _AssetPageState extends State<AssetPage> {
         DragAndDropList(
           header: AssetGroupItem(
             assetGroup: group,
-            onTab: (group) async {
-              final changed = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => AssetGroupEditPage(assetGroup: group),
-                ),
-              );
-
-              if (changed == true) {
-                setState(() {
-                  _updateLists();
-                });
-              }
+            onUpdated: () {
+              setState(() {
+                _updateLists();
+              });
             },
           ),
           children: [
@@ -51,18 +43,10 @@ class _AssetPageState extends State<AssetPage> {
             DragAndDropItem(
               child: AssetItem(
                 asset: asset,
-                onTab: (asset) async {
-                  final changed = await Navigator.of(context).push<bool>(
-                    MaterialPageRoute(
-                      builder: (_) => AssetEditPage(asset: asset),
-                    ),
-                  );
-
-                  if (changed == true) {
-                    setState(() {
-                      _updateLists();
-                    });
-                  }
+                onUpdated: () {
+                  setState(() {
+                    _updateLists();
+                  });
                 },
               ),
             )

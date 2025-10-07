@@ -69,10 +69,10 @@ class _AssetEditPageState extends State<AssetEditPage> {
   }
 
   ButtonStyle get _roundedBtnStyle => ButtonStyle(
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+  );
 
   Future<void> _onConfirmAdd() async {
     final name = _nameCtrl.text.trim();

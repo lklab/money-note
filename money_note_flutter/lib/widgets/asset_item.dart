@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:money_note_flutter/data/asset_storage.dart';
+import 'package:money_note_flutter/pages/asset_edit_page.dart';
+import 'package:money_note_flutter/pages/calculator_page.dart';
 
 class AssetItem extends StatelessWidget {
   final Asset asset;
-  final Function(Asset)? onTab;
+  final Function()? onUpdated;
 
   const AssetItem({
     super.key,
     required this.asset,
-    this.onTab,
+    this.onUpdated,
   });
 
   @override
@@ -16,7 +18,20 @@ class AssetItem extends StatelessWidget {
     return ListTile(
       title: Text(asset.name),
       trailing: TextButton(
-        onPressed: () {
+        onPressed: () async {
+          final result = await Navigator.push<int>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CalculatorPage(initialValue: asset.amount),
+            ),
+          );
+
+          if (result != null) {
+            await AssetStorage.instance.updateAsset(asset.id, amount: result);
+            if (onUpdated != null) {
+              onUpdated!();
+            }
+          }
         },
         style: ButtonStyle(
           alignment: Alignment.centerRight,
@@ -35,9 +50,17 @@ class AssetItem extends StatelessWidget {
           textAlign: TextAlign.right,
         ),
       ),
-      onTap: onTab != null ? () {
-        onTab!(asset);
-      } : null,
+      onTap: () async {
+        final changed = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => AssetEditPage(asset: asset),
+          ),
+        );
+
+        if (changed == true && onUpdated != null) {
+          onUpdated!();
+        }
+      },
     );
   }
 }
