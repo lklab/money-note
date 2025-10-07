@@ -99,7 +99,6 @@ class _AssetPageState extends State<AssetPage> {
   }
 
   void _updateClosing() async {
-    debugPrint('@@@ _updateClosing');
     final closing = await RecordStorage().getClosingOfMonth(DateTime.now());
     setState(() {
       _closing = closing;
