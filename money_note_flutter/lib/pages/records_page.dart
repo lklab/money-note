@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:money_note_flutter/data/record_storage.dart';
+import 'package:money_note_flutter/pages/record_edit_page.dart';
 import 'package:money_note_flutter/utils/utils.dart';
 import 'package:money_note_flutter/widgets/calendar_day.dart';
 import 'package:money_note_flutter/widgets/month_navigator.dart';
@@ -24,10 +25,12 @@ class _RecordsPageState extends State<RecordsPage> {
   late int _lastIndex;
   late final VoidCallback _listener;
 
+  DateTime _currentMonth = DateTime.now();
   List<Record> _records = [];
   List<List<int>> _dayCalendar = List.generate(6, (_) => List.filled(7, 0));
   List<List<List<Record>>> _recordCalendar = List.generate(6, (_) => List.generate(7, (_) => []));
 
+  bool _currentDayInitialized = false;
   int _currentDay = 1;
   int _startWeekDay = 0;
 
@@ -64,6 +67,7 @@ class _RecordsPageState extends State<RecordsPage> {
     final records = await RecordStorage().getRecordsOfMonth(month);
 
     setState(() {
+      _currentMonth = month;
       _records = records;
 
       final (calendar, startWeekday) = buildMonthCalendar(month.year, month.month);
@@ -76,13 +80,25 @@ class _RecordsPageState extends State<RecordsPage> {
         _recordCalendar[i][j].add(record);
       }
 
-      final now = DateTime.now();
-      if (month.year == now.year && month.month == now.month) {
-        _currentDay = now.day;
+      if (_currentDayInitialized) {
+        final lastDay = Utils.getLastDayInMonth(_currentMonth);
+        if (_currentDay > lastDay) {
+          _currentDay = 1;
+        }
       } else {
-        _currentDay = 1;
+        final now = DateTime.now();
+        if (month.year == now.year && month.month == now.month) {
+          _currentDay = now.day;
+        } else {
+          _currentDay = 1;
+        }
+        _currentDayInitialized = true;
       }
     });
+  }
+
+  void _updatePage() {
+    _setMonth(_currentMonth);
   }
 
   (int, int) getCalendarIndex(int day) {
@@ -98,10 +114,7 @@ class _RecordsPageState extends State<RecordsPage> {
 
     // 이번 달의 첫 날과 마지막 날짜 계산
     DateTime firstDay = DateTime(year, month, 1);
-    DateTime nextMonth = (month == 12)
-        ? DateTime(year + 1, 1, 1)
-        : DateTime(year, month + 1, 1);
-    int daysInMonth = nextMonth.subtract(const Duration(days: 1)).day;
+    int daysInMonth = Utils.getLastDayInMonth(firstDay);
 
     // 이번 달 1일의 요일 (0:일 ~ 6:토)
     int startWeekday = firstDay.weekday % 7; // DateTime에서 일요일은 7 → 0으로 맞춤
@@ -257,17 +270,55 @@ class _RecordsPageState extends State<RecordsPage> {
           ),
           Expanded(
             child: ListView.builder(
+              padding: EdgeInsets.only(
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 100,
+              ),
               itemCount: records.length,
               itemBuilder: (context, index) {
                 return RecordItem(
                   record: records[index],
                   showDay: false,
+                  onUpdated: () {
+                    setState(() {
+                      _updatePage();
+                    });
+                  },
                 );
               },
             ),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final changed = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) {
+                final now = DateTime.now();
+                final initialDate = DateTime(
+                  _currentMonth.year,
+                  _currentMonth.month,
+                  _currentDay,
+                  now.hour,
+                  now.minute,
+                );
+                return RecordEditPage(
+                  initialDate: initialDate,
+                );
+              },
+            ),
+          );
+
+          if (changed == true) {
+            _updatePage();
+          }
+        },
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add),
+      )
     );
   }
 }

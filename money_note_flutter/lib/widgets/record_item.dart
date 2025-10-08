@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:money_note_flutter/data/record_storage.dart';
+import 'package:money_note_flutter/pages/record_edit_page.dart';
 import 'package:money_note_flutter/utils/style.dart';
 import 'package:money_note_flutter/utils/utils.dart';
 
 class RecordItem extends StatelessWidget {
   final Record record;
   final bool showDay;
+  final Function()? onUpdated;
 
   const RecordItem({
     super.key,
     required this.record,
     this.showDay = true,
+    this.onUpdated,
   });
 
   @override
@@ -69,8 +72,20 @@ class RecordItem extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
         minVerticalPadding: 0.0,
         visualDensity: const VisualDensity(vertical: -4),
-        onTap: () {
-          
+        onTap: () async {
+          final changed = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) {
+                return RecordEditPage(
+                  record: record,
+                );
+              },
+            ),
+          );
+
+          if (changed == true && onUpdated != null) {
+            onUpdated!();
+          }
         },
       ),
     );

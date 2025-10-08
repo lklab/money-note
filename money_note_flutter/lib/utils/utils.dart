@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:money_note_flutter/utils/style.dart';
 
@@ -56,5 +57,108 @@ class Utils {
         ],
       ),
     );
+  }
+
+  static Future<DateTime?> pickDateTime(
+    BuildContext context, {
+    DateTime? initial,
+    DateTime? firstDate,
+    DateTime? lastDate,
+  }) async {
+    final now = DateTime.now();
+
+    final DateTime init = initial ?? now;
+    final DateTime first = firstDate ?? DateTime(1970, 1, 1);
+    final DateTime last  = lastDate  ?? DateTime(2100, 12, 31);
+
+    // 1) 날짜 고르기
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: init,
+      firstDate: first,
+      lastDate: last,
+      helpText: '날짜 선택',
+      cancelText: '취소',
+      confirmText: '다음',
+      builder: (context, child) {
+        // 다크모드/테마 커스터마이징 하고 싶으면 여기서 child 감싸기
+        return child!;
+      },
+    );
+
+    if (pickedDate == null) return null; // 사용자가 취소
+
+    // 2) 시간 고르기 (시/분)
+    final TimeOfDay? pickedTime = await showTimePicker(
+      // ignore: use_build_context_synchronously
+      context: context,
+      initialTime: TimeOfDay(hour: init.hour, minute: init.minute),
+      helpText: '시간 선택',
+      cancelText: '취소',
+      confirmText: '확인',
+      // 키보드 입력 모드로 시작하려면 다음 줄 주석 해제:
+      // initialEntryMode: TimePickerEntryMode.input,
+    );
+
+    if (pickedTime == null) return null; // 사용자가 취소
+
+    // 3) 날짜 + 시간 합치기 (초/밀리초는 0으로)
+    return DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+  }
+
+  static Future<DateTime?> showCupertinoDateTimePicker(
+    BuildContext context, {
+    DateTime? initial,
+    DateTime? minDate,
+    DateTime? maxDate,
+  }) async {
+    DateTime temp = initial ?? DateTime.now();
+
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 상단 액션 바
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(child: const Text('취소'), onPressed: () => Navigator.pop(context)),
+                  const Text('날짜/시간 선택', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextButton(child: const Text('완료'), onPressed: () => Navigator.pop(context, temp)),
+                ],
+              ),
+              SizedBox(
+                height: 216,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.dateAndTime,
+                  initialDateTime: temp,
+                  minimumDate: minDate,
+                  maximumDate: maxDate,
+                  minuteInterval: 1, // 시/분까지만 (초 없음)
+                  use24hFormat: true, // 24시간제
+                  onDateTimeChanged: (v) => temp = v,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static int getLastDayInMonth(DateTime date) {
+    DateTime nextMonth = (date.month == 12)
+        ? DateTime(date.year + 1, 1, 1)
+        : DateTime(date.year, date.month + 1, 1);
+    return nextMonth.subtract(const Duration(days: 1)).day;
   }
 }
