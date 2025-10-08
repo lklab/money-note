@@ -29,7 +29,7 @@ class Utils {
   }
 
   static Color getMoneyColor(int v, {bool useBlue = false}) {
-    return v >= 0 ? (useBlue ? Color(0xFF007AFF) : Color(0xFF1C1B1F)) : Color(0xFFFF3B30);
+    return v == 0 ? Style.neutralColor : v > 0 ? (useBlue ? Style.positiveColor : Style.neutralColor) : Style.negativeColor;
   }
 
   static void showSnack(BuildContext context, String msg) {

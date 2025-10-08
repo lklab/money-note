@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:money_note_flutter/pages/asset_page.dart';
+import 'package:money_note_flutter/pages/records_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -16,7 +17,7 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     List<Widget> pages = [
       AssetPage(index: 0, indexListenable: currentIndex),
-      Center(child: Text('검색 화면', style: TextStyle(fontSize: 24))),
+      RecordsPage(index: 1, indexListenable: currentIndex),
       Center(child: Text('알림 화면', style: TextStyle(fontSize: 24))),
       Center(child: Text('설정 화면', style: TextStyle(fontSize: 24))),
     ];

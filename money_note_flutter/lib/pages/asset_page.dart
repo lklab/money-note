@@ -40,10 +40,11 @@ class _AssetPageState extends State<AssetPage> {
     _listener = () {
       final now = widget.indexListenable.value;
       if (now == widget.index && _lastIndex != now) {
-        _updateClosing();
+        _onPageShow();
       }
-      // if (_lastIndex == widget.index && now != widget.index) {
-      // }
+      if (_lastIndex == widget.index && now != widget.index) {
+        _onPageHide();
+      }
       _lastIndex = now;
     };
     widget.indexListenable.addListener(_listener);
@@ -57,6 +58,12 @@ class _AssetPageState extends State<AssetPage> {
     widget.indexListenable.removeListener(_listener);
     super.dispose();
   }
+
+  void _onPageShow() {
+    _updateClosing();
+  }
+
+  void _onPageHide() { }
 
   void _updateLists() {
     _lists = [];

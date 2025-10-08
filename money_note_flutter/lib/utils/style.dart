@@ -14,6 +14,10 @@ class Style {
     focusedBorder: UnderlineInputBorder(),
   );
 
+  static final Color positiveColor = Color(0xFF007AFF);
+  static final Color negativeColor = Color(0xFFFF3B30);
+  static final Color neutralColor = Color(0xFF1C1B1F);
+
   static InputDecoration getSingleLineInputDecoration(String hintText) {
     return InputDecoration(
       hintText: hintText,
