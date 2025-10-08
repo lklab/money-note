@@ -4,6 +4,7 @@ import 'package:money_note_flutter/data/record_storage.dart';
 import 'package:money_note_flutter/utils/utils.dart';
 import 'package:money_note_flutter/widgets/calendar_day.dart';
 import 'package:money_note_flutter/widgets/month_navigator.dart';
+import 'package:money_note_flutter/widgets/record_item.dart';
 
 class RecordsPage extends StatefulWidget {
   final int index;
@@ -23,10 +24,12 @@ class _RecordsPageState extends State<RecordsPage> {
   late int _lastIndex;
   late final VoidCallback _listener;
 
+  List<Record> _records = [];
   List<List<int>> _dayCalendar = List.generate(6, (_) => List.filled(7, 0));
   List<List<List<Record>>> _recordCalendar = List.generate(6, (_) => List.generate(7, (_) => []));
 
   int _currentDay = 1;
+  int _startWeekDay = 0;
 
   @override
   void initState() {
@@ -61,15 +64,15 @@ class _RecordsPageState extends State<RecordsPage> {
     final records = await RecordStorage().getRecordsOfMonth(month);
 
     setState(() {
+      _records = records;
+
       final (calendar, startWeekday) = buildMonthCalendar(month.year, month.month);
       _dayCalendar = calendar;
+      _startWeekDay = startWeekday;
 
       _recordCalendar = List.generate(6, (_) => List.generate(7, (_) => []));
       for (Record record in records) {
-        int day = record.dateTime.day;
-        int index = day + startWeekday - 1;
-        int i = index ~/ 7;
-        int j = index % 7;
+        final (i, j) = getCalendarIndex(record.dateTime.day);
         _recordCalendar[i][j].add(record);
       }
 
@@ -80,6 +83,13 @@ class _RecordsPageState extends State<RecordsPage> {
         _currentDay = 1;
       }
     });
+  }
+
+  (int, int) getCalendarIndex(int day) {
+    int index = day + _startWeekDay - 1;
+    int i = index ~/ 7;
+    int j = index % 7;
+    return (i, j);
   }
 
   (List<List<int>>, int) buildMonthCalendar(int year, int month) {
@@ -110,10 +120,29 @@ class _RecordsPageState extends State<RecordsPage> {
 
   @override
   Widget build(BuildContext context) {
+    int totalIncome = 0;
+    int totalExpense = 0;
+    int totalDiff = 0;
+
+    for (Record record in _records) {
+      switch (record.kind) {
+        case RecordKind.income :
+          totalIncome += record.amount;
+          break;
+        case RecordKind.expense :
+          totalExpense += record.amount;
+          break;
+      }
+    }
+    totalDiff = totalIncome - totalExpense;
+
     final labels = ['수입','지출','수지'];
-    final values = [999999999, 99999999, 999999999];
+    final values = [totalIncome, totalExpense, totalDiff];
     final days = ['일', '월', '화', '수', '목', '금', '토'];
     final weekCount = _dayCalendar[5][0] == 0 ? 5 : 6;
+
+    final (i, j) = getCalendarIndex(_currentDay);
+    final List<Record> records = _recordCalendar[i][j];
 
     return Scaffold(
       body: Column(
@@ -217,6 +246,25 @@ class _RecordsPageState extends State<RecordsPage> {
                 }),
               ),
             ],
+          ),
+          SizedBox(height: 4),
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Theme.of(context).colorScheme.surfaceDim, width: 1),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                return RecordItem(
+                  record: records[index],
+                  showDay: false,
+                );
+              },
+            ),
           ),
         ],
       ),
