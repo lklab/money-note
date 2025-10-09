@@ -144,40 +144,8 @@ class _AssetPageState extends State<AssetPage> {
               width: 1.0,
             ),
             children: [
-              TableRow(
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer),
-                children: List.generate(4, (col) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        labels[col],
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              TableRow(
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer),
-                children: List.generate(4, (col) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        Utils.formatMoney(totals[col]),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: Utils.getMoneyColor(totals[col]),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+              Utils.getTableRowHeader(context, labels),
+              Utils.getTableRowContent(context, totals),
             ],
           ),
           SizedBox(height: 16.0),
@@ -255,7 +223,7 @@ class _AssetPageState extends State<AssetPage> {
           ),
           SpeedDialChild(
             child: const FaIcon(FontAwesomeIcons.folderOpen),
-            label: '자산 그룹 추가',
+            label: '자산그룹 추가',
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
             onTap: () async {
               final changed = await Navigator.of(context).push<bool>(

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:money_note_flutter/data/budget_indexer.dart';
+import 'package:money_note_flutter/data/budget_storage.dart';
 import 'package:money_note_flutter/data/record_storage.dart';
 import 'package:money_note_flutter/pages/record_edit_page.dart';
 import 'package:money_note_flutter/utils/utils.dart';
@@ -29,6 +31,7 @@ class _RecordsPageState extends State<RecordsPage> {
   List<Record> _records = [];
   List<List<int>> _dayCalendar = List.generate(6, (_) => List.filled(7, 0));
   List<List<List<Record>>> _recordCalendar = List.generate(6, (_) => List.generate(7, (_) => []));
+  BudgetIndexer? _budgetIndexer;
 
   bool _currentDayInitialized = false;
   int _currentDay = 1;
@@ -51,7 +54,7 @@ class _RecordsPageState extends State<RecordsPage> {
     };
     widget.indexListenable.addListener(_listener);
 
-    _setMonth(DateTime.now());
+    _setMonth(_currentMonth);
   }
 
   @override
@@ -60,15 +63,20 @@ class _RecordsPageState extends State<RecordsPage> {
     super.dispose();
   }
 
-  void _onPageShow() { }
+  void _onPageShow() {
+    _updatePage();
+  }
+
   void _onPageHide() { }
 
   void _setMonth(DateTime month) async {
     final records = await RecordStorage().getRecordsOfMonth(month);
+    final monthlyBudget = await BudgetStorage().getMonthlyBudget(month);
 
     setState(() {
       _currentMonth = month;
       _records = records;
+      _budgetIndexer = BudgetIndexer(monthlyBudget);
 
       final (calendar, startWeekday) = buildMonthCalendar(month.year, month.month);
       _dayCalendar = calendar;
@@ -177,40 +185,8 @@ class _RecordsPageState extends State<RecordsPage> {
               width: 1.0,
             ),
             children: [
-              TableRow(
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer),
-                children: List.generate(3, (col) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        labels[col],
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              TableRow(
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer),
-                children: List.generate(3, (col) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        Utils.formatMoney(values[col]),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: Utils.getMoneyColor(values[col]),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+              Utils.getTableRowHeader(context, labels),
+              Utils.getTableRowContent(context, values, useBlues: [false, false, true]),
             ],
           ),
           Table(
@@ -268,6 +244,7 @@ class _RecordsPageState extends State<RecordsPage> {
               ),
             ),
           ),
+          if (_budgetIndexer != null)
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.only(
@@ -280,6 +257,7 @@ class _RecordsPageState extends State<RecordsPage> {
               itemBuilder: (context, index) {
                 return RecordItem(
                   record: records[index],
+                  budgetIndexer: _budgetIndexer!,
                   showDay: false,
                   onUpdated: () {
                     setState(() {
@@ -294,6 +272,10 @@ class _RecordsPageState extends State<RecordsPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          if (_budgetIndexer == null) {
+            return;
+          }
+
           final changed = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (_) {
@@ -307,6 +289,7 @@ class _RecordsPageState extends State<RecordsPage> {
                 );
                 return RecordEditPage(
                   initialDate: initialDate,
+                  budgetIndexer: _budgetIndexer!,
                 );
               },
             ),

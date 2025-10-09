@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_note_flutter/data/asset_storage.dart';
+import 'package:money_note_flutter/data/budget_storage.dart';
 import 'package:money_note_flutter/data/record_storage.dart';
 import 'package:money_note_flutter/pages/main_page.dart';
 
@@ -24,6 +25,7 @@ Future _initStroages() async {
   }
 
   await RecordStorage().init();
+  await BudgetStorage().init();
 }
 
 class MainApp extends ConsumerStatefulWidget {

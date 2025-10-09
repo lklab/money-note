@@ -161,4 +161,50 @@ class Utils {
         : DateTime(date.year, date.month + 1, 1);
     return nextMonth.subtract(const Duration(days: 1)).day;
   }
+
+  static TableRow getTableRowHeader(BuildContext context, List<String> texts) {
+    return TableRow(
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer),
+      children: List.generate(texts.length, (col) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              texts[col],
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  static TableRow getTableRowContent(BuildContext context, List<int> values, {List<bool>? useBlues}) {
+    useBlues ??= List.filled(values.length, false);
+
+    if (values.length > useBlues.length) {
+      useBlues += List.filled(values.length - useBlues.length, false);
+    }
+
+    return TableRow(
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer),
+      children: List.generate(values.length, (col) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              Utils.formatMoney(values[col]),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                color: Utils.getMoneyColor(values[col], useBlue: useBlues![col]),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:money_note_flutter/data/budget_indexer.dart';
 import 'package:money_note_flutter/data/record_storage.dart';
 import 'package:money_note_flutter/pages/calculator_page.dart';
 import 'package:money_note_flutter/utils/style.dart';
@@ -10,11 +11,13 @@ import 'package:money_note_flutter/widgets/wands_button.dart';
 class RecordEditPage extends StatefulWidget {
   final Record? record;
   final DateTime? initialDate;
+  final BudgetIndexer budgetIndexer;
 
   const RecordEditPage({
     super.key,
     this.record,
     this.initialDate,
+    required this.budgetIndexer,
   });
 
   @override
@@ -43,13 +46,13 @@ class _RecordEditPageState extends State<RecordEditPage> {
 
     if (record != null) {
       _date = record.dateTime;
+      _kind = record.kind;
+      _selectedBudget = widget.budgetIndexer.budgetMap[record.budget]?.id ?? 'none';
+      _amount = record.amount;
+
     } else if (widget.initialDate != null) {
       _date = widget.initialDate!;
     }
-
-    _kind = record?.kind ?? RecordKind.expense;
-    _selectedBudget = record?.budget ?? 'none';
-    _amount = record?.amount ?? 0;
 
     _dateCtrl = TextEditingController(text: _formatDate(_date));
     _contentCtrl = TextEditingController(text: record?.content ?? '');
@@ -148,12 +151,9 @@ class _RecordEditPageState extends State<RecordEditPage> {
   @override
   Widget build(BuildContext context) {
     bool isEdit = widget.record != null;
-    List<String> budgetNames = ['없음', '내 예산'];
-    List<String> budgetIds = ['none', 'mybudget'];
 
-    if (widget.record != null && !budgetIds.contains(widget.record!.budget)) {
-      _selectedBudget = budgetIds[0];
-    }
+    final budgetNames = ['없음', ...widget.budgetIndexer.budgets.map((b) => b.name)];
+    final budgetIds   = ['none', ...widget.budgetIndexer.budgets.map((b) => b.id)];
 
     return Scaffold(
       appBar: AppBar(
@@ -240,7 +240,10 @@ class _RecordEditPageState extends State<RecordEditPage> {
                               child: DropdownButtonFormField<String>(
                                 initialValue: _selectedBudget,
                                 items: List.generate(budgetNames.length, (i) {
-                                  return DropdownMenuItem(value: budgetIds[i], child: Text(budgetNames[i]),);
+                                  return DropdownMenuItem(
+                                    value: budgetIds[i],
+                                    child: Text(budgetNames[i]),
+                                  );
                                 }),
                                 onChanged: (v) => setState(() {
                                   if (v != null) {

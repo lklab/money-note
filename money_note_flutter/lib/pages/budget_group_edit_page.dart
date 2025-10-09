@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/data/asset_storage.dart';
+import 'package:money_note_flutter/data/budget_storage.dart';
 import 'package:money_note_flutter/utils/style.dart';
 import 'package:money_note_flutter/utils/utils.dart';
 import 'package:money_note_flutter/widgets/labeled_input.dart';
 
-class AssetGroupEditPage extends StatefulWidget {
-  final AssetGroup? assetGroup;
+class BudgetGroupEditPage extends StatefulWidget {
+  final DateTime month;
+  final BudgetGroup? budgetGroup;
 
-  const AssetGroupEditPage({
+  const BudgetGroupEditPage({
     super.key,
-    this.assetGroup,
+    required this.month,
+    this.budgetGroup,
   });
 
   @override
-  State<AssetGroupEditPage> createState() => _AssetGroupEditPageState();
+  State<BudgetGroupEditPage> createState() => _BudgetGroupEditPageState();
 }
 
-class _AssetGroupEditPageState extends State<AssetGroupEditPage> {
+class _BudgetGroupEditPageState extends State<BudgetGroupEditPage> {
   late final TextEditingController _nameCtrl;
   final FocusNode _focusNode = FocusNode();
-
-  bool get _isEdit => widget.assetGroup != null;
 
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.assetGroup?.name ?? '');
+    _nameCtrl = TextEditingController(text: widget.budgetGroup?.name ?? '');
   }
 
   @override
@@ -41,7 +41,10 @@ class _AssetGroupEditPageState extends State<AssetGroupEditPage> {
       return;
     }
 
-    await AssetStorage.instance.addGroup(name);
+    await BudgetStorage().addBudgetGroup(
+      name: name,
+      month: widget.month,
+    );
 
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -53,39 +56,29 @@ class _AssetGroupEditPageState extends State<AssetGroupEditPage> {
       return;
     }
 
-    final group = widget.assetGroup!;
-    await AssetStorage.instance.renameGroup(group.id, name);
+    await BudgetStorage().updateBudgetGroupName(widget.budgetGroup!.id, name);
 
     if (mounted) Navigator.of(context).pop(true);
   }
 
   Future<void> _onDelete() async {
-    final groups = AssetStorage.instance.groups;
-    final group = widget.assetGroup!;
-
-    if (groups.length <= 1) {
-      Utils.showSnack(context, '자산그룹은 최소 1개 이상 있어야 합니다');
-      return;
-    }
-
-    if (group.assets.isNotEmpty) {
-      Utils.showSnack(context, '자산이 없는 자산그룹만 삭제할 수 있습니다');
-      return;
-    }
+    final group = widget.budgetGroup!;
 
     final ok = await Utils.confirmDelete(context);
     if (ok != true) return;
 
-    await AssetStorage.instance.deleteGroupIfEmpty(group.id);
+    await BudgetStorage().deleteBudgetGroup(groupId: group.id, month: widget.month);
 
     if (mounted) Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isEdit = widget.budgetGroup != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: _isEdit ? const Text('자산그룹 수정') : const Text('자산그룹 추가'),
+        title: isEdit ? const Text('예산그룹 수정') : const Text('예산그룹 추가'),
       ),
       body: GestureDetector(
         onTap: () {
@@ -111,7 +104,7 @@ class _AssetGroupEditPageState extends State<AssetGroupEditPage> {
                         textInputAction: TextInputAction.done,
                         decoration: Style.getSingleLineInputDecoration('이름을 입력하세요'),
                         onSubmitted: (_) {
-                          if (_isEdit) {
+                          if (isEdit) {
                             _onConfirmUpdate();
                           } else {
                             _onConfirmAdd();
@@ -123,7 +116,7 @@ class _AssetGroupEditPageState extends State<AssetGroupEditPage> {
                     const SizedBox(height: 12),
                     const Spacer(),
 
-                    if (!_isEdit)
+                    if (!isEdit)
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
@@ -133,7 +126,7 @@ class _AssetGroupEditPageState extends State<AssetGroupEditPage> {
                       ),
                     ),
 
-                    if (_isEdit)
+                    if (isEdit)
                     Row(
                       children: [
                         Expanded(
