@@ -362,7 +362,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   Row(children: [
                     const Expanded(child: SizedBox.shrink()),
                     Expanded(child: _buildKey('0', onTap: () => _pressDigit('0'))),
-                    const Expanded(child: SizedBox.shrink()),
+                    Expanded(child: _buildKey('00', onTap: () => _pressDigit('00'))),
                     Expanded(child: _buildKey('확인', onTap: _pressConfirm, isAccent: true)),
                   ]),
                 ],
