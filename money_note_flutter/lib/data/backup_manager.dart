@@ -156,6 +156,36 @@ class BackupManager {
     }
   }
 
+  /// GET /refresh
+  Future<String> refreshApiKey() async {
+    _uri('/_ping');
+    final currentKey = _keyOrThrow;
+
+    final resp = await _client.get(
+      _uri('/refresh'),
+      headers: {
+        'Accept': 'application/json',
+        'X-API-Key': currentKey,
+      },
+    );
+
+    if (resp.statusCode != 200) {
+      throw Exception('GET /refresh 실패: ${resp.statusCode} ${resp.body}');
+    }
+
+    final data = jsonDecode(resp.body);
+    final newKey = (data is Map && data['key'] is String) ? data['key'] as String : null;
+    if (newKey == null || newKey.isEmpty) {
+      throw Exception('GET /refresh 응답에 key가 없습니다: ${resp.body}');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    _key = newKey;
+    await prefs.setString(_prefKey, newKey);
+
+    return newKey;
+  }
+
   void dispose() {
     _client.close();
   }

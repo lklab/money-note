@@ -75,6 +75,27 @@ class Utils {
     );
   }
 
+  static Future<bool?> showConfirmPopup(BuildContext context, String message) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: Style.buttonStyle,
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: Style.buttonStyle,
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Future<DateTime?> pickDateTime(
     BuildContext context, {
     DateTime? initial,

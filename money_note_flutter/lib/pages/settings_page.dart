@@ -145,7 +145,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 decoration: Style.getSingleLineInputDecoration('키를 입력하세요'),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 8),
                             SizedBox(
                               width: double.infinity,
                               child: WandsButton(
@@ -160,15 +160,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
                                   _updatePage();
                                 },
-                                text: '저장',
+                                text: '서버 설정 저장',
                               ),
                             ),
-                            const SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,
                               child: WandsButton(
                                 onPressed: () async {
                                   FocusScope.of(context).unfocus();
+
+                                  final ok = await Utils.showConfirmPopup(context, '서버로부터 내역을 로드하시겠습니까?');
+                                  if (ok != true) return;
 
                                   List<Record> records = [];
 
@@ -192,7 +194,25 @@ class _SettingsPageState extends State<SettingsPage> {
                                     }
                                   }
                                 },
-                                text: '로드',
+                                text: '내역 로드',
+                              ),
+                            ),
+                            SizedBox(
+                              width: double.infinity,
+                              child: WandsButton(
+                                onPressed: () async {
+                                  FocusScope.of(context).unfocus();
+
+                                  try {
+                                    await BackupManager().refreshApiKey();
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      Utils.showPopup(context, '키를 업데이트하는 데에 실패했습니다.\n${e.toString()}}');
+                                    }
+                                    return;
+                                  }
+                                },
+                                text: '키 업데이트',
                               ),
                             ),
                           ],
