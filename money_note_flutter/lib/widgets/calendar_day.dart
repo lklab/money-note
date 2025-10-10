@@ -68,7 +68,7 @@ class CalendarDay extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerRight,
                     child: Text(
-                      isEmpty ? '' : Utils.formatMoney(totalDiff),
+                      isEmpty || totalDiff == 0 ? '' : Utils.formatMoney(totalDiff),
                       style: Theme.of(context).textTheme.bodySmall!.copyWith(
                         color: Utils.getMoneyColor(totalDiff, useBlue: true),
                         fontSize: 10.0,
@@ -83,7 +83,7 @@ class CalendarDay extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.cover,
                 child: Text(
-                  isEmpty ? '' : Utils.formatMoney(totalIncome),
+                  isEmpty || totalIncome == 0 ? '' : Utils.formatMoney(totalIncome),
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
                     color: Utils.getMoneyColor(totalIncome, useBlue: true),
                     fontSize: 10.0,
@@ -96,7 +96,7 @@ class CalendarDay extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  isEmpty ? '' : Utils.formatMoney(totalExpense),
+                  isEmpty || totalExpense == 0 ? '' : Utils.formatMoney(totalExpense),
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
                     color: Utils.getMoneyColor(-totalExpense, useBlue: true),
                     fontSize: 10.0,
