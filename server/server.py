@@ -18,11 +18,10 @@ ROOT_DIR = HOME_DIR / "money_note"
 CONFIG_DIR = Path(".") / ".config"            # 서버 '실행 위치' 기준
 KEY_FILE = CONFIG_DIR / "key.json"
 PORT = 37265
-MIN_KEEP_FILES = 5
-PRUNE_OLDER_THAN_SECS = 48 * 3600  # 48 hours
 
-# 동시성 보호(월별)
+# 동시성 보호
 month_locks: Dict[str, Lock] = {}
+key_lock = Lock()
 
 # -----------------------------
 # 유틸
@@ -90,30 +89,30 @@ def list_month_files(month: int) -> List[Path]:
     return sorted([p for p in d.glob("*.json") if p.is_file()],
                   key=lambda p: (parse_ts_from_filename(p.name) or 0))
 
-def prune_old_files_for_month(month: int):
-    files = list_month_files(month)
-    if len(files) <= MIN_KEEP_FILES:
-        return
-    cutoff_ms = now_epoch_ms() - (PRUNE_OLDER_THAN_SECS * 1000)
-    kept = len(files)
-    for f in files:
-        if kept <= MIN_KEEP_FILES:
-            break
-        ts_ms = parse_ts_from_filename(f.name)
-        if ts_ms is None:
-            continue
-        if ts_ms <= cutoff_ms:
-            try:
-                f.unlink(missing_ok=True)
-                kept -= 1
-            except Exception:
-                pass
-
 def read_json_safely(path: Path) -> Optional[Dict[str, Any]]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return None
+
+PRUNE_WINDOW_MS = 24 * 3600 * 1000
+
+def prune_files_within_24h_for_month(month: int, new_file_ts_ms: int, new_file_path: Path):
+    """new_file_ts_ms 기준으로 지난 24시간 내(포함)의 기존 파일들을 모두 삭제 (신규 파일 제외)"""
+    files = list_month_files(month)
+    cutoff_ms = new_file_ts_ms - PRUNE_WINDOW_MS
+    for f in files:
+        if f == new_file_path:
+            continue
+        ts_ms = parse_ts_from_filename(f.name)
+        if ts_ms is None:
+            continue
+
+        if cutoff_ms <= ts_ms < new_file_ts_ms:
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 # -----------------------------
 # 스키마(Pydantic)
@@ -134,7 +133,7 @@ class PostRecordBody(BaseModel):
 # -----------------------------
 # FastAPI 앱
 # -----------------------------
-app = FastAPI(title="Money Note API", version="1.1.0")
+app = FastAPI(title="Money Note API", version="1.2.0")  # [CHANGED] 버전 업데이트
 
 @app.on_event("startup")
 def _startup():
@@ -191,7 +190,7 @@ def post_record(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ):
     """
-    ~/money_note/{yyyyMM}/{timestamp}.json 생성 후 보존 규칙 적용
+    ~/money_note/{yyyyMM}/{timestamp}.json 생성 후 '24시간 이내 파일 삭제' 정책 적용
     인증: X-API-Key 헤더
     """
     check_auth_header(x_api_key)
@@ -220,9 +219,30 @@ def post_record(
         }
 
         out_file.write_text(json.dumps(to_save, ensure_ascii=False, indent=2), encoding="utf-8")
-        prune_old_files_for_month(body.month)
+
+        prune_files_within_24h_for_month(body.month, ts_ms, out_file)
 
     return {}
+
+@app.get("/refresh")
+def refresh_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="invalid key")
+
+    with key_lock:
+        keys = load_or_create_keys()
+        if x_api_key not in keys:
+            raise HTTPException(status_code=401, detail="invalid key")
+
+        new_key = uuid.uuid4().hex + uuid.uuid4().hex
+        new_keys = [new_key if k == x_api_key else k for k in keys]
+
+        try:
+            KEY_FILE.write_text(json.dumps({"keys": new_keys}, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"failed to update key file: {e}")
+
+    return {"key": new_key}
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=PORT, reload=False)
