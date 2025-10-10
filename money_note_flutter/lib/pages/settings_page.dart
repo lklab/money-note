@@ -215,6 +215,20 @@ class _SettingsPageState extends State<SettingsPage> {
                                 text: '키 업데이트',
                               ),
                             ),
+                            SizedBox(
+                              width: double.infinity,
+                              child: WandsButton(
+                                onPressed: () async {
+                                  FocusScope.of(context).unfocus();
+
+                                  final ok = await Utils.confirmDelete(context);
+                                  if (ok != true) return;
+
+                                  await BackupManager().deleteConfig();
+                                },
+                                text: '서버 정보 지우기',
+                              ),
+                            ),
                           ],
                         ),
                       ),
