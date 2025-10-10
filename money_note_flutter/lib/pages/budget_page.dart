@@ -13,6 +13,7 @@ import 'package:money_note_flutter/widgets/budget_group_item.dart';
 import 'package:money_note_flutter/widgets/budget_item.dart';
 import 'package:money_note_flutter/widgets/budget_item_raw.dart';
 import 'package:money_note_flutter/widgets/month_navigator.dart';
+import 'package:money_note_flutter/widgets/wands_button.dart';
 
 class BudgetPage extends StatefulWidget {
   final int index;
@@ -34,6 +35,7 @@ class _BudgetPageState extends State<BudgetPage> {
 
   DateTime _currentMonth = DateTime.now();
   MonthlyBudget? _monthlyBudget;
+  MonthlyBudget? _prevBudget;
   BudgetRecords? _budgetRecords;
 
   List<DragAndDropList> _lists = [];
@@ -78,9 +80,15 @@ class _BudgetPageState extends State<BudgetPage> {
     final records = await RecordStorage().getRecordsOfMonth(month);
     final monthlyBudget = await BudgetStorage().getMonthlyBudget(month);
 
+    MonthlyBudget? prevBudget;
+    if (monthlyBudget.groups.isEmpty) {
+      prevBudget = await BudgetStorage().getMonthlyBudget(DateTime(month.year, month.month - 1));
+    }
+
     setState(() {
       _currentMonth = month;
       _monthlyBudget = monthlyBudget;
+      _prevBudget = prevBudget;
       _budgetRecords = BudgetRecords(monthlyBudget, records);
 
       _updateLists(records, monthlyBudget);
@@ -129,6 +137,12 @@ class _BudgetPageState extends State<BudgetPage> {
 
   @override
   Widget build(BuildContext context) {
+    bool isCopyAvailable =
+      _monthlyBudget != null &&
+      _prevBudget != null &&
+      _monthlyBudget!.groups.isEmpty &&
+      _prevBudget!.groups.isNotEmpty;
+
     return Scaffold(
       body: Column(
         children: [
@@ -216,6 +230,26 @@ class _BudgetPageState extends State<BudgetPage> {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: const [BoxShadow(blurRadius: 8, spreadRadius: 1)],
               ),
+              contentsWhenEmpty: isCopyAvailable ?
+                WandsButton(
+                  onPressed: () async {
+                    DateTime prevMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+                    await BudgetStorage().cloneMonthlyBudget(
+                      fromMonth: prevMonth,
+                      toMonth: _currentMonth,
+                    );
+
+                    _updatePage();
+                  },
+                  isFilled: false,
+                  text: '이전 달에서 예산 복사하기',
+                ) :
+                Text(
+                  '예산이 없습니다.',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
             ),
           ),
         ],

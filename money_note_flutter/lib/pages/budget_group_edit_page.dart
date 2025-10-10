@@ -64,6 +64,11 @@ class _BudgetGroupEditPageState extends State<BudgetGroupEditPage> {
   Future<void> _onDelete() async {
     final group = widget.budgetGroup!;
 
+    if (group.budgets.isNotEmpty) {
+      Utils.showSnack(context, '예산이 없는 예산그룹만 삭제할 수 있습니다');
+      return;
+    }
+
     final ok = await Utils.confirmDelete(context);
     if (ok != true) return;
 
