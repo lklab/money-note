@@ -188,8 +188,6 @@ class _BudgetPageState extends State<BudgetPage> {
                 final newGroup = _monthlyBudget!.groups[newListIndex];
                 final budget = oldGroup.budgets[oldItemIndex];
 
-                print('@@@ oldGroup=${oldGroup.name}, newGroup=${newGroup.name}, budget=${budget.name}');
-
                 await BudgetStorage().moveBudget(
                   month: _currentMonth,
                   budgetId: budget.id,
