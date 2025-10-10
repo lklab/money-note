@@ -168,6 +168,69 @@ class RecordStorage {
     );
   }
 
+  /// 여러 개의 Record를 한 번에 추가
+  /// - 이미 존재하는 id는 건너뜀 (무시)
+  /// - 새 id는 모두 INSERT
+  /// - 입력된 레코드 중 가장 과거의 monthKey부터 현재월까지 마감액을 한 번만 재계산
+  /// - r.id가 비어있으면 새 uuid 생성 후 사용
+  Future<List<Record>> addRecords(List<Record> records) async {
+    if (records.isEmpty) return const [];
+
+    final db = _requireDb();
+    final uuid = const Uuid();
+    final inserted = <Record>[];
+
+    await db.transaction((txn) async {
+      int? minMk;
+
+      for (final r in records) {
+        // id가 비어있으면 새로 생성
+        final rid = (r.id.trim().isEmpty) ? uuid.v4() : r.id;
+        final mk = _monthKey(r.dateTime);
+
+        // 이미 존재하는 id인지 확인
+        final exists = await txn.query(
+          'records',
+          columns: ['id'],
+          where: 'id = ?',
+          whereArgs: [rid],
+          limit: 1,
+        );
+
+        if (exists.isNotEmpty) {
+          // 중복 id → 무시
+          continue;
+        }
+
+        // 실제 INSERT
+        await txn.insert('records', {
+          'id': rid,
+          'dateTime': r.dateTime.millisecondsSinceEpoch,
+          'monthKey': mk,
+          'kind': _kindToInt(r.kind),
+          'budget': r.budget,
+          'amount': r.amount,
+          'content': r.content,
+          'memo': r.memo,
+        });
+
+        inserted.add(r.copyWith(id: rid));
+
+        // 재계산 시작 월 추적
+        if (minMk == null || mk < minMk) {
+          minMk = mk;
+        }
+      }
+
+      // 최소 monthKey부터 현재월까지 마감액 재계산
+      if (minMk != null) {
+        await _recomputeClosingsFromMonthKeyTxn(txn, minMk);
+      }
+    });
+
+    return inserted;
+  }
+
   /// 특정 id 수정 (부분 갱신)
   Future<Record?> updateRecord(
     String id, {
