@@ -184,38 +184,32 @@ class _BudgetPageState extends State<BudgetPage> {
             child: DragAndDropLists(
               children: _lists,
               onItemReorder: (oldItemIndex, oldListIndex, newItemIndex, newListIndex) async {
-                // final groups = AssetStorage.instance.groups;
-            
-                // if (oldListIndex == newListIndex && oldItemIndex <= newItemIndex) {
-                //   ++newItemIndex;
-                // }
-            
-                // await AssetStorage.instance.moveAsset(
-                //   assetId: groups[oldListIndex].assets[oldItemIndex].id,
-                //   toGroupId: groups[newListIndex].id,
-                //   insertBeforeAssetId: newItemIndex < groups[newListIndex].assets.length ?
-                //     groups[newListIndex].assets[newItemIndex].id : null,
-                // );
-            
-                // setState(() {
-                //   _updateLists();
-                // });
+                final oldGroup = _monthlyBudget!.groups[oldListIndex];
+                final newGroup = _monthlyBudget!.groups[newListIndex];
+                final budget = oldGroup.budgets[oldItemIndex];
+
+                print('@@@ oldGroup=${oldGroup.name}, newGroup=${newGroup.name}, budget=${budget.name}');
+
+                await BudgetStorage().moveBudget(
+                  month: _currentMonth,
+                  budgetId: budget.id,
+                  fromGroupId: oldGroup.id,
+                  toGroupId: newGroup.id,
+                  toIndex: newItemIndex,
+                );
+
+                _updatePage();
               },
               onListReorder: (oldListIndex, newListIndex) async {
-                // final groups = AssetStorage.instance.groups;
-            
-                // if (oldListIndex <= newListIndex) {
-                //   ++newListIndex;
-                // }
-            
-                // await AssetStorage.instance.reorderGroup(
-                //   groups[oldListIndex].id,
-                //   insertBeforeGroupId: newListIndex < groups.length ? groups[newListIndex].id : null,
-                // );
-            
-                // setState(() {
-                //   _updateLists();
-                // });
+                final group = _monthlyBudget!.groups[oldListIndex];
+
+                await BudgetStorage().moveGroup(
+                  month: _currentMonth,
+                  groupId: group.id,
+                  toIndex: newListIndex,
+                );
+
+                _updatePage();
               },
               listPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
               lastListTargetSize: 64.0,
