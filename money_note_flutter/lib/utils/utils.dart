@@ -59,6 +59,22 @@ class Utils {
     );
   }
 
+  static void showPopup(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: Style.buttonStyle,
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Future<DateTime?> pickDateTime(
     BuildContext context, {
     DateTime? initial,

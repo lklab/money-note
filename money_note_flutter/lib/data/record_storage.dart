@@ -11,6 +11,9 @@ enum RecordKind { income, expense }
 int _kindToInt(RecordKind k) => k == RecordKind.income ? 0 : 1;
 RecordKind _intToKind(int v) => v == 0 ? RecordKind.income : RecordKind.expense;
 
+int recordKindToInt(RecordKind k) => _kindToInt(k);
+RecordKind intToRecordKind(int v) => _intToKind(v);
+
 class Record {
   final String id;           // uuid
   final DateTime dateTime;   // 거래 시각
@@ -62,6 +65,13 @@ class RecordStorage {
   RecordStorage._internal();
 
   Database? _db;
+
+  bool _isDirty = false;
+  bool get isDirty => _isDirty;
+
+  void clearDirty() {
+    _isDirty = false;
+  }
 
   // ---------- Public API ----------
 
@@ -156,6 +166,8 @@ class RecordStorage {
       // 변경 즉시 마감금액 재계산
       await _recomputeClosingsFromMonthKeyTxn(txn, mk);
     });
+
+    _isDirty = true;
 
     return Record(
       id: rid,
@@ -281,6 +293,8 @@ class RecordStorage {
       );
     });
 
+    _isDirty = true;
+
     return updated;
   }
 
@@ -303,6 +317,8 @@ class RecordStorage {
         await _recomputeClosingsFromMonthKeyTxn(txn, oldMonth);
       }
     });
+
+    _isDirty = true;
 
     return ok;
   }

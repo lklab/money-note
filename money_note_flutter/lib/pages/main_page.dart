@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:money_note_flutter/pages/asset_page.dart';
 import 'package:money_note_flutter/pages/budget_page.dart';
 import 'package:money_note_flutter/pages/records_page.dart';
+import 'package:money_note_flutter/pages/settings_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -20,7 +21,7 @@ class _MainPageState extends State<MainPage> {
       AssetPage(index: 0, indexListenable: currentIndex),
       RecordsPage(index: 1, indexListenable: currentIndex),
       BudgetPage(index: 2, indexListenable: currentIndex),
-      Center(child: Text('설정 화면', style: TextStyle(fontSize: 24))),
+      SettingsPage(index: 3, indexListenable: currentIndex)
     ];
     return Scaffold(
       body: SafeArea(

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:money_note_flutter/data/backup_manager.dart';
 import 'package:money_note_flutter/data/budget_indexer.dart';
 import 'package:money_note_flutter/data/budget_storage.dart';
 import 'package:money_note_flutter/data/record_storage.dart';
@@ -73,6 +74,8 @@ class _RecordsPageState extends State<RecordsPage> {
     final records = await RecordStorage().getRecordsOfMonth(month);
     final monthlyBudget = await BudgetStorage().getMonthlyBudget(month);
 
+    _backupRecords(_currentMonth, records);
+
     setState(() {
       _currentMonth = month;
       _records = records;
@@ -137,6 +140,22 @@ class _RecordsPageState extends State<RecordsPage> {
       }
     }
     return (calendar, startWeekday);
+  }
+
+  void _backupRecords(DateTime month, List<Record> records) async {
+    final recordStorage = RecordStorage();
+
+    if (recordStorage.isDirty) {
+      recordStorage.clearDirty();
+
+      try {
+        await BackupManager().uploadRecordsForMonth(_currentMonth, records);
+      } catch (e) {
+        if (mounted) {
+          Utils.showPopup(context, '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
+        }
+      }
+    }
   }
 
   @override
