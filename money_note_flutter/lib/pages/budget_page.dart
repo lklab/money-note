@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:money_note/data/backup_manager.dart';
 import 'package:money_note/data/budget_records.dart';
 import 'package:money_note/data/budget_storage.dart';
 import 'package:money_note/data/record_storage.dart';
@@ -85,6 +86,8 @@ class _BudgetPageState extends State<BudgetPage> {
       prevBudget = await BudgetStorage().getMonthlyBudget(DateTime(month.year, month.month - 1));
     }
 
+    _backup(_currentMonth, records, monthlyBudget);
+
     setState(() {
       _currentMonth = month;
       _monthlyBudget = monthlyBudget;
@@ -132,6 +135,24 @@ class _BudgetPageState extends State<BudgetPage> {
           ),
         )
       );
+    }
+  }
+
+  void _backup(DateTime month, List<Record> records, MonthlyBudget monthlyBudget) async {
+    final recordStorage = RecordStorage();
+    final budgetStorage = BudgetStorage();
+
+    if (recordStorage.isDirty || budgetStorage.isDirty) {
+      recordStorage.clearDirty();
+      budgetStorage.clearDirty();
+
+      try {
+        await BackupManager().uploadBackupDataForMonth(_currentMonth, records: records, monthlyBudgets: [monthlyBudget]);
+      } catch (e) {
+        if (mounted) {
+          Utils.showPopup(context, '통신 실패', '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
+        }
+      }
     }
   }
 

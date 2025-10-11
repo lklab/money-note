@@ -74,7 +74,7 @@ class _RecordsPageState extends State<RecordsPage> {
     final records = await RecordStorage().getRecordsOfMonth(month);
     final monthlyBudget = await BudgetStorage().getMonthlyBudget(month);
 
-    _backupRecords(_currentMonth, records);
+    _backup(_currentMonth, records, monthlyBudget);
 
     setState(() {
       _currentMonth = month;
@@ -142,14 +142,16 @@ class _RecordsPageState extends State<RecordsPage> {
     return (calendar, startWeekday);
   }
 
-  void _backupRecords(DateTime month, List<Record> records) async {
+  void _backup(DateTime month, List<Record> records, MonthlyBudget monthlyBudget) async {
     final recordStorage = RecordStorage();
+    final budgetStorage = BudgetStorage();
 
-    if (recordStorage.isDirty) {
+    if (recordStorage.isDirty || budgetStorage.isDirty) {
       recordStorage.clearDirty();
+      budgetStorage.clearDirty();
 
       try {
-        await BackupManager().uploadRecordsForMonth(_currentMonth, records);
+        await BackupManager().uploadBackupDataForMonth(_currentMonth, records: records, monthlyBudgets: [monthlyBudget]);
       } catch (e) {
         if (mounted) {
           Utils.showPopup(context, '통신 실패', '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');

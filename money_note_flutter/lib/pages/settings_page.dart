@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:money_note/data/backup_manager.dart';
+import 'package:money_note/data/budget_storage.dart';
 import 'package:money_note/data/record_storage.dart';
 import 'package:money_note/utils/style.dart';
 import 'package:money_note/utils/utils.dart';
@@ -172,10 +173,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                   final ok = await Utils.showConfirmPopup(context, '서버로부터 내역을 로드하시겠습니까?');
                                   if (ok != true) return;
 
-                                  List<Record> records = [];
+                                  BackupData? backupData;
 
                                   try {
-                                    records = await BackupManager().fetchAllRecords();
+                                    backupData = await BackupManager().fetchBackupData();
                                   } catch (e) {
                                     if (context.mounted) {
                                       Utils.showPopup(context, '통신 실패', '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
@@ -183,8 +184,13 @@ class _SettingsPageState extends State<SettingsPage> {
                                     return;
                                   }
 
-                                  if (records.isNotEmpty) {
-                                    await RecordStorage().addRecords(records);
+                                  if (backupData.records.isNotEmpty || backupData.monthlyBudgets.isNotEmpty) {
+                                    if (backupData.records.isNotEmpty) {
+                                      await RecordStorage().addRecords(backupData.records);
+                                    }
+                                    if (backupData.monthlyBudgets.isNotEmpty) {
+                                      await BudgetStorage().importMonthlyBudgetsMerged(backupData.monthlyBudgets);
+                                    }
                                     if (context.mounted) {
                                       Utils.showPopup(context, '완료', '내역 로드를 완료했습니다.');
                                     }

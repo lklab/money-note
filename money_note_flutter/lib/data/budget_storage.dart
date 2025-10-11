@@ -10,10 +10,16 @@ enum BudgetKind { income, expense }
 int _kindToInt(BudgetKind k) => k == BudgetKind.income ? 0 : 1;
 BudgetKind _intToKind(int v) => v == 0 ? BudgetKind.income : BudgetKind.expense;
 
+int budgetKindToInt(BudgetKind k) => _kindToInt(k);
+BudgetKind intToBudgetKind(int v) => _intToKind(v);
+
 /// 현금/자본
 enum BudgetAssetType { cash, capital }
 int _assetToInt(BudgetAssetType t) => t == BudgetAssetType.cash ? 0 : 1;
 BudgetAssetType _intToAsset(int v) => v == 0 ? BudgetAssetType.cash : BudgetAssetType.capital;
+
+int budgetAssetTypeToInt(BudgetAssetType t) => _assetToInt(t);
+BudgetAssetType intToBudgetAssetType(int v) => _intToAsset(v);
 
 /// Domain models (앱 내부에서 사용)
 class Budget {
@@ -80,6 +86,13 @@ class BudgetStorage {
   BudgetStorage._internal();
 
   Database? _db;
+
+  bool _isDirty = false;
+  bool get isDirty => _isDirty;
+
+  void clearDirty() {
+    _isDirty = false;
+  }
 
   // ===================== Public API =====================
 
@@ -245,6 +258,7 @@ class BudgetStorage {
       });
     });
 
+    _isDirty = true;
     return Budget(
       id: bid,
       name: name,
@@ -278,6 +292,8 @@ class BudgetStorage {
     await db.update('budgets', newMap, where: 'id = ?', whereArgs: [budgetId]);
 
     final after = await db.query('budgets', where: 'id = ?', whereArgs: [budgetId], limit: 1);
+
+    _isDirty = true;
     return _rowToBudget(after.first);
   }
 
@@ -321,6 +337,7 @@ class BudgetStorage {
       }
     });
 
+    _isDirty = true;
     return ok;
   }
 
@@ -345,6 +362,7 @@ class BudgetStorage {
       });
     });
 
+    _isDirty = true;
     return gid;
   }
 
@@ -353,6 +371,8 @@ class BudgetStorage {
     final db = _requireDb();
     final cnt =
         await db.update('budget_groups', {'name': newName}, where: 'id = ?', whereArgs: [groupId]);
+
+    _isDirty = true;
     return cnt > 0;
   }
 
@@ -408,6 +428,7 @@ class BudgetStorage {
       ok = true;
     });
 
+    _isDirty = true;
     return ok;
   }
 
@@ -444,6 +465,8 @@ class BudgetStorage {
         'position': toIndex,
       });
     });
+
+    _isDirty = true;
   }
 
   // 8. 예산그룹 이동(같은 월 내에서 순서 변경)
@@ -497,6 +520,8 @@ class BudgetStorage {
         whereArgs: [mk, groupId],
       );
     });
+
+    _isDirty = true;
   }
 
   // 9. 월간예산 없을 때: 다른 월에서 복사(새 ID 생성)
@@ -586,6 +611,131 @@ class BudgetStorage {
         }
       }
     });
+
+    _isDirty = true;
+  }
+
+  /// 전달된 MonthlyBudget 리스트를 규칙에 따라 한 번에 저장/병합한다.
+  /// 규칙:
+  /// 1) 동일 monthKey가 이미 있으면 그룹만 합치고(append), 없으면 월 생성 후 삽입
+  /// 2) 같은 월에 같은 groupId가 있으면 그 그룹의 budgets만 합치기(append)
+  /// 3) 다른 월에서 이미 사용 중인 groupId는 무시
+  /// 4) budgets 테이블에 이미 존재하는 budgetId는 무시(링크도 추가하지 않음)
+  Future<void> importMonthlyBudgetsMerged(List<MonthlyBudget> items) async {
+    if (items.isEmpty) return;
+
+    final db = _requireDb();
+
+    await db.transaction((txn) async {
+      for (final mb in items) {
+        final mk = mb.monthKey;
+
+        // (1) 월 존재 보장 (있으면 무시)
+        await txn.insert(
+          'monthly_budgets',
+          {'monthKey': mk},
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+
+        // 현재 월의 마지막 그룹 position 구하기(append용)
+        Future<int> nextGroupPos() => _nextGroupPositionInMonthTxn(txn, mk);
+
+        for (final group in mb.groups) {
+          final gid = group.id;
+
+          // (3) 다른 월에 같은 groupId가 이미 존재하면 SKIP
+          final usedElsewhere = await _groupUsedInOtherMonthTxn(txn, gid, mk);
+          if (usedElsewhere) {
+            // skip this group entirely
+            continue;
+          }
+
+          // 그룹 엔티티 존재 보장(없으면 생성, 있으면 이름은 갱신하지 않음)
+          final groupRow = await txn.query(
+            'budget_groups',
+            where: 'id = ?',
+            whereArgs: [gid],
+            limit: 1,
+          );
+          if (groupRow.isEmpty) {
+            await txn.insert('budget_groups', {'id': gid, 'name': group.name});
+          }
+
+          // (1,2) 월-그룹 링크 존재 보장(없으면 append로 추가)
+          final link = await txn.query(
+            'monthly_budget_groups',
+            where: 'monthKey = ? AND groupId = ?',
+            whereArgs: [mk, gid],
+            limit: 1,
+          );
+          if (link.isEmpty) {
+            final pos = await nextGroupPos();
+            await txn.insert('monthly_budget_groups', {
+              'monthKey': mk,
+              'groupId': gid,
+              'position': pos,
+            });
+          }
+
+          // 이 그룹 안에서 budgets append용 position 헬퍼
+          Future<int> nextBudgetPos() => _nextBudgetPositionInGroupTxn(txn, mk, gid);
+
+          // (2,4) 예산 병합: budgets 테이블에 같은 id가 있으면 무시, 없으면 생성 + 링크 append
+          for (final b in group.budgets) {
+            final exists = await _budgetIdExistsTxn(txn, b.id);
+            if (exists) {
+              // 규칙 4: 동일 id 존재 -> 완전히 무시(링크도 추가하지 않음)
+              continue;
+            }
+
+            // budgets 엔티티 생성
+            await txn.insert('budgets', {
+              'id': b.id,
+              'name': b.name,
+              'kind': _kindToInt(b.kind),
+              'assetType': _assetToInt(b.assetType),
+              'amount': b.amount,
+            });
+
+            // group_budgets 링크 append (해당 월/그룹의 맨 뒤)
+            final bpos = await nextBudgetPos();
+            await txn.insert('group_budgets', {
+              'monthKey': mk,
+              'groupId': gid,
+              'budgetId': b.id,
+              'position': bpos,
+            });
+          }
+        }
+      }
+    });
+
+    _isDirty = true;
+  }
+
+  // ====== 보조 쿼리 ======
+
+  /// budgets 테이블에 해당 budgetId가 존재하는지(전역) 확인
+  Future<bool> _budgetIdExistsTxn(DatabaseExecutor txn, String budgetId) async {
+    final r = await txn.rawQuery(
+      'SELECT 1 FROM budgets WHERE id = ? LIMIT 1;',
+      [budgetId],
+    );
+    return r.isNotEmpty;
+  }
+
+  /// 같은 groupId가 다른 월(monthKey != mk)에서 이미 쓰였는지 확인
+  Future<bool> _groupUsedInOtherMonthTxn(DatabaseExecutor txn, String groupId, int mk) async {
+    final r = await txn.rawQuery(
+      '''
+      SELECT 1
+      FROM monthly_budget_groups
+      WHERE groupId = ? AND monthKey != ?
+      LIMIT 1;
+      ''',
+      [groupId, mk],
+    );
+    return r.isNotEmpty;
   }
 
   // ===================== Internals =====================

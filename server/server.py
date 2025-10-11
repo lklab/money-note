@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uvicorn
 from threading import Lock
 
@@ -131,6 +131,123 @@ class PostRecordBody(BaseModel):
     month: int
     records: List[RecordItem]
 
+class BudgetItem(BaseModel):
+    id: str
+    name: str
+    kind: int          # 0: income, 1: expense
+    assetType: int     # 0: cash, 1: capital
+    amount: str
+
+class BudgetGroupItem(BaseModel):
+    id: str
+    name: str
+    budgets: List[BudgetItem]
+
+class MonthlyBudgetItem(BaseModel):
+    monthKey: int      # yyyyMM
+    groups: List[BudgetGroupItem]
+
+class PostBackupDataBody(BaseModel):
+    month: int
+    records: List[RecordItem] = Field(default_factory=list)
+    monthlyBudgets: List[MonthlyBudgetItem] = Field(default_factory=list)
+
+def _validate_string_lengths_in_dict(d: Any, path: str = ""):
+    """
+    dict/list 안의 모든 str 필드가 255자를 넘지 않는지 확인.
+    256자 이상이면 422.
+    """
+    if isinstance(d, dict):
+        for k, v in d.items():
+            _validate_string_lengths_in_dict(v, f"{path}.{k}" if path else k)
+    elif isinstance(d, list):
+        for i, v in enumerate(d):
+            _validate_string_lengths_in_dict(v, f"{path}[{i}]")
+    else:
+        if isinstance(d, str) and len(d) > 255:
+            raise HTTPException(
+                status_code=422,
+                detail=f"field '{path}' exceeds 255 characters"
+            )
+
+def _ensure_amount_str(obj: Any, key: str = "amount"):
+    """
+    obj[key]가 존재한다면 문자열로 강제 변환.
+    """
+    if isinstance(obj, dict) and key in obj:
+        v = obj[key]
+        obj[key] = str(v)
+
+def _normalize_backupdata_payload(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    GET 응답 병합 및 POST 저장 직전에 amount류를 문자열로 강제.
+    """
+    # records
+    recs = data.get("records", [])
+    if isinstance(recs, list):
+        for r in recs:
+            if isinstance(r, dict):
+                _ensure_amount_str(r, "amount")
+
+    # monthlyBudgets -> groups -> budgets -> amount
+    mbs = data.get("monthlyBudgets", [])
+    if isinstance(mbs, list):
+        for mb in mbs:
+            if not isinstance(mb, dict):
+                continue
+            groups = mb.get("groups", [])
+            if isinstance(groups, list):
+                for g in groups:
+                    if not isinstance(g, dict):
+                        continue
+                    budgets = g.get("budgets", [])
+                    if isinstance(budgets, list):
+                        for b in budgets:
+                            if isinstance(b, dict):
+                                _ensure_amount_str(b, "amount")
+
+    return data
+
+def _add_months(year: int, month: int, delta: int) -> int:
+    y = year + (month + delta - 1) // 12
+    m = (month + delta - 1) % 12 + 1
+    return y * 100 + m
+
+def _check_month_range_or_400(month_yyyymm: int):
+    now = datetime.now()
+    this_month = now.year * 100 + now.month
+    cur_y, cur_m = this_month // 100, this_month % 100
+    min_month = _add_months(cur_y, cur_m, -12)
+    max_month = _add_months(cur_y, cur_m, +1)
+    if not (min_month <= month_yyyymm <= max_month):
+        raise HTTPException(
+            status_code=400,
+            detail=f"month {month_yyyymm} out of allowed range ({min_month} ~ {max_month})"
+        )
+
+def _check_array_limits_or_error(body: PostBackupDataBody):
+    """
+    모든 최상위 배열( records, monthlyBudgets )은 999개까지 허용.
+    또한 monthlyBudgets 내부 groups/budgets도 999개까지 허용(안전한 상한선).
+    """
+    if len(body.records) > 999:
+        raise HTTPException(status_code=413, detail="too many records (max 999)")
+    if len(body.monthlyBudgets) > 999:
+        raise HTTPException(status_code=413, detail="too many monthlyBudgets (max 999)")
+    for i, mb in enumerate(body.monthlyBudgets):
+        if len(mb.groups) > 999:
+            raise HTTPException(status_code=413, detail=f"monthlyBudgets[{i}].groups exceeds 999")
+        for j, g in enumerate(mb.groups):
+            if len(g.budgets) > 999:
+                raise HTTPException(status_code=413, detail=f"monthlyBudgets[{i}].groups[{j}].budgets exceeds 999")
+
+def _check_string_lengths_backupdata_or_422(body: PostBackupDataBody):
+    """
+    body 전체를 dict로 변환해 255 초과 문자열이 있는지 검사.
+    """
+    body_dict = json.loads(body.model_dump_json())
+    _validate_string_lengths_in_dict(body_dict)
+
 # -----------------------------
 # FastAPI 앱
 # -----------------------------
@@ -146,87 +263,69 @@ def get_month_lock(mstr: str) -> Lock:
         month_locks[mstr] = Lock()
     return month_locks[mstr]
 
-@app.get("/records")
-def get_records(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
-    """
-    모든 월 폴더에서 '가장 최신' 파일을 하나씩 읽고, records를 합쳐서 반환
-    인증: X-API-Key 헤더
-    """
+@app.get("/backupdata")
+def get_backupdata(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
     check_auth_header(x_api_key)
 
-    if not ROOT_DIR.exists():
-        return {"records": []}
+    merged_records: List[Dict[str, Any]] = []
+    merged_monthly_budgets: List[Dict[str, Any]] = []
 
-    merged: List[Dict[str, Any]] = []
-    for child in ROOT_DIR.iterdir():
-        if not child.is_dir():
-            continue
-        if len(child.name) == 6 and child.name.isdigit():
-            files = sorted(
-                [p for p in child.glob("*.json") if p.is_file()],
-                key=lambda p: (parse_ts_from_filename(p.name) or 0)
-            )
-            if not files:
+    if ROOT_DIR.exists():
+        for child in ROOT_DIR.iterdir():
+            if not child.is_dir():
                 continue
-            latest = files[-1]
-            data = read_json_safely(latest)
-            if not data:
-                continue
-            recs = data.get("records", [])
-            if isinstance(recs, list):
-                for r in recs:
-                    if isinstance(r, dict):
-                        v = r.get("amount")
-                        if isinstance(v, int):
-                            r["amount"] = str(v)
-                        elif not isinstance(v, str):
-                            r["amount"] = str(v)
-                        merged.append(r)
+            if len(child.name) == 6 and child.name.isdigit():
+                files = sorted(
+                    [p for p in child.glob("*.json") if p.is_file()],
+                    key=lambda p: (parse_ts_from_filename(p.name) or 0)
+                )
+                if not files:
+                    continue
+                latest = files[-1]
+                data = read_json_safely(latest)
+                if not data:
+                    continue
 
-    return {"records": merged}
+                # normalize amounts => string
+                data = _normalize_backupdata_payload(data)
 
-@app.post("/record")
-def post_record(
-    body: PostRecordBody,
+                # records
+                recs = data.get("records", [])
+                if isinstance(recs, list):
+                    for r in recs:
+                        if isinstance(r, dict):
+                            merged_records.append(r)
+
+                # monthlyBudgets
+                mbs = data.get("monthlyBudgets", [])
+                if isinstance(mbs, list):
+                    for mb in mbs:
+                        if isinstance(mb, dict):
+                            merged_monthly_budgets.append(mb)
+
+    return {
+        "records": merged_records,
+        "monthlyBudgets": merged_monthly_budgets,
+    }
+
+# [ADD] ===== POST /backupdata =====
+@app.post("/backupdata")
+def post_backupdata(
+    body: PostBackupDataBody,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ):
-    """
-    ~/money_note/{yyyyMM}/{timestamp}.json 생성 후 '24시간 이내 파일 삭제' 정책 적용
-    인증: X-API-Key 헤더
-    """
     check_auth_header(x_api_key)
 
-    now = datetime.now()
-    this_month = now.year * 100 + now.month
+    # 월 범위 검사
+    _check_month_range_or_400(body.month)
 
-    current_year = this_month // 100
-    current_month = this_month % 100
+    # 배열 상한 검사
+    _check_array_limits_or_error(body)
 
-    def add_months(y, m, delta):
-        y += (m + delta - 1) // 12
-        m = (m + delta - 1) % 12 + 1
-        return y * 100 + m
+    # 문자열 길이 검사
+    _check_string_lengths_backupdata_or_422(body)
 
-    min_month = add_months(current_year, current_month, -12)
-    max_month = add_months(current_year, current_month, +1)
-
-    if not (min_month <= body.month <= max_month):
-        raise HTTPException(
-            status_code=400,
-            detail=f"month {body.month} out of allowed range ({min_month} ~ {max_month})"
-        )
-
-    if len(body.records) > 999:
-        raise HTTPException(status_code=413, detail="too many records (max 999)")
-
-    for idx, r in enumerate(body.records):
-        for field_name, value in r.model_dump().items():
-            if isinstance(value, str) and len(value) > 255:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"record[{idx}].{field_name} exceeds 255 characters"
-                )
-
+    # 동시성 잠금
     mname = month_dir_name(body.month)
     lock = get_month_lock(mname)
 
@@ -235,6 +334,7 @@ def post_record(
         ts_ms = now_epoch_ms()
         out_file = month_path / f"{ts_ms}.json"
 
+        # dict 변환 + amount 문자열화
         to_save = {
             "records": [
                 {
@@ -247,13 +347,41 @@ def post_record(
                     "memo": r.memo,
                 }
                 for r in body.records
-            ]
+            ],
+            "monthlyBudgets": [
+                {
+                    "monthKey": mb.monthKey,
+                    "groups": [
+                        {
+                            "id": g.id,
+                            "name": g.name,
+                            "budgets": [
+                                {
+                                    "id": b.id,
+                                    "name": b.name,
+                                    "kind": b.kind,
+                                    "assetType": b.assetType,
+                                    "amount": str(b.amount),
+                                }
+                                for b in g.budgets
+                            ],
+                        }
+                        for g in mb.groups
+                    ],
+                }
+                for mb in body.monthlyBudgets
+            ],
         }
+
+        # amount를 안전하게 문자열로 통일
+        to_save = _normalize_backupdata_payload(to_save)
 
         out_file.write_text(json.dumps(to_save, ensure_ascii=False, indent=2), encoding="utf-8")
         prune_files_within_24h_for_month(body.month, ts_ms, out_file)
 
-    return {"status": "ok", "saved": len(body.records)}
+    saved_rec_count = len(body.records)
+    saved_mb_count = len(body.monthlyBudgets)
+    return {"status": "ok", "saved": {"records": saved_rec_count, "monthlyBudgets": saved_mb_count}}
 
 @app.get("/refresh")
 def refresh_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
