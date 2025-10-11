@@ -4,6 +4,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
@@ -195,6 +196,37 @@ def post_record(
     """
     check_auth_header(x_api_key)
 
+    now = datetime.now()
+    this_month = now.year * 100 + now.month
+
+    current_year = this_month // 100
+    current_month = this_month % 100
+
+    def add_months(y, m, delta):
+        y += (m + delta - 1) // 12
+        m = (m + delta - 1) % 12 + 1
+        return y * 100 + m
+
+    min_month = add_months(current_year, current_month, -12)
+    max_month = add_months(current_year, current_month, +1)
+
+    if not (min_month <= body.month <= max_month):
+        raise HTTPException(
+            status_code=400,
+            detail=f"month {body.month} out of allowed range ({min_month} ~ {max_month})"
+        )
+
+    if len(body.records) > 999:
+        raise HTTPException(status_code=413, detail="too many records (max 999)")
+
+    for idx, r in enumerate(body.records):
+        for field_name, value in r.model_dump().items():
+            if isinstance(value, str) and len(value) > 255:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"record[{idx}].{field_name} exceeds 255 characters"
+                )
+
     mname = month_dir_name(body.month)
     lock = get_month_lock(mname)
 
@@ -219,10 +251,9 @@ def post_record(
         }
 
         out_file.write_text(json.dumps(to_save, ensure_ascii=False, indent=2), encoding="utf-8")
-
         prune_files_within_24h_for_month(body.month, ts_ms, out_file)
 
-    return {}
+    return {"status": "ok", "saved": len(body.records)}
 
 @app.get("/refresh")
 def refresh_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
