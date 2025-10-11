@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:money_note_flutter/data/budget_indexer.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/pages/record_edit_page.dart';
-import 'package:money_note_flutter/utils/style.dart';
-import 'package:money_note_flutter/utils/utils.dart';
+import 'package:money_note/data/budget_indexer.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/pages/record_edit_page.dart';
+import 'package:money_note/utils/style.dart';
+import 'package:money_note/utils/utils.dart';
 
 class RecordItem extends StatelessWidget {
   final Record record;

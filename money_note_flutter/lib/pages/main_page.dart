@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:money_note_flutter/pages/asset_page.dart';
-import 'package:money_note_flutter/pages/budget_page.dart';
-import 'package:money_note_flutter/pages/records_page.dart';
-import 'package:money_note_flutter/pages/settings_page.dart';
+import 'package:money_note/pages/asset_page.dart';
+import 'package:money_note/pages/budget_page.dart';
+import 'package:money_note/pages/records_page.dart';
+import 'package:money_note/pages/settings_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

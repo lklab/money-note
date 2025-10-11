@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/utils/style.dart';
+import 'package:money_note/utils/style.dart';
 
 class Utils {
   static String formatMoney(int v) {
@@ -59,10 +59,11 @@ class Utils {
     );
   }
 
-  static void showPopup(BuildContext context, String message) {
+  static void showPopup(BuildContext context, String title, String message) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        title: Text(title),
         content: Text(message),
         actions: [
           FilledButton(

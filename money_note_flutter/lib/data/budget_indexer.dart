@@ -1,4 +1,4 @@
-import 'package:money_note_flutter/data/budget_storage.dart';
+import 'package:money_note/data/budget_storage.dart';
 
 class BudgetIndexer {
   final List<Budget> _budgets = [];

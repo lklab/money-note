@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/data/backup_manager.dart';
-import 'package:money_note_flutter/data/budget_indexer.dart';
-import 'package:money_note_flutter/data/budget_storage.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/pages/record_edit_page.dart';
-import 'package:money_note_flutter/utils/utils.dart';
-import 'package:money_note_flutter/widgets/calendar_day.dart';
-import 'package:money_note_flutter/widgets/month_navigator.dart';
-import 'package:money_note_flutter/widgets/record_item.dart';
+import 'package:money_note/data/backup_manager.dart';
+import 'package:money_note/data/budget_indexer.dart';
+import 'package:money_note/data/budget_storage.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/pages/record_edit_page.dart';
+import 'package:money_note/utils/utils.dart';
+import 'package:money_note/widgets/calendar_day.dart';
+import 'package:money_note/widgets/month_navigator.dart';
+import 'package:money_note/widgets/record_item.dart';
 
 class RecordsPage extends StatefulWidget {
   final int index;
@@ -152,7 +152,7 @@ class _RecordsPageState extends State<RecordsPage> {
         await BackupManager().uploadRecordsForMonth(_currentMonth, records);
       } catch (e) {
         if (mounted) {
-          Utils.showPopup(context, '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
+          Utils.showPopup(context, '통신 실패', '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
         }
       }
     }

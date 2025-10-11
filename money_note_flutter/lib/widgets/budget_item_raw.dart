@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:money_note_flutter/utils/utils.dart';
+import 'package:money_note/utils/utils.dart';
 
 class BudgetItemRaw extends StatelessWidget {
   final bool isGroup;

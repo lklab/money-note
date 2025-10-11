@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/utils/utils.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/utils/utils.dart';
 
 class CalendarDay extends StatelessWidget {
   final int day;

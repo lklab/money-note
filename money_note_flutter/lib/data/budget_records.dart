@@ -1,6 +1,6 @@
-import 'package:money_note_flutter/data/budget_indexer.dart';
-import 'package:money_note_flutter/data/budget_storage.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
+import 'package:money_note/data/budget_indexer.dart';
+import 'package:money_note/data/budget_storage.dart';
+import 'package:money_note/data/record_storage.dart';
 
 class BudgetRecords {
   late BudgetIndexer _budgetIndexer;

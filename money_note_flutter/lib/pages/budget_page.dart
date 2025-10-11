@@ -3,17 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:money_note_flutter/data/budget_records.dart';
-import 'package:money_note_flutter/data/budget_storage.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/pages/budget_edit_page.dart';
-import 'package:money_note_flutter/pages/budget_group_edit_page.dart';
-import 'package:money_note_flutter/utils/utils.dart';
-import 'package:money_note_flutter/widgets/budget_group_item.dart';
-import 'package:money_note_flutter/widgets/budget_item.dart';
-import 'package:money_note_flutter/widgets/budget_item_raw.dart';
-import 'package:money_note_flutter/widgets/month_navigator.dart';
-import 'package:money_note_flutter/widgets/wands_button.dart';
+import 'package:money_note/data/budget_records.dart';
+import 'package:money_note/data/budget_storage.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/pages/budget_edit_page.dart';
+import 'package:money_note/pages/budget_group_edit_page.dart';
+import 'package:money_note/utils/utils.dart';
+import 'package:money_note/widgets/budget_group_item.dart';
+import 'package:money_note/widgets/budget_item.dart';
+import 'package:money_note/widgets/budget_item_raw.dart';
+import 'package:money_note/widgets/month_navigator.dart';
+import 'package:money_note/widgets/wands_button.dart';
 
 class BudgetPage extends StatefulWidget {
   final int index;

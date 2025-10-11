@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:money_note_flutter/data/backup_manager.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/utils/style.dart';
-import 'package:money_note_flutter/utils/utils.dart';
-import 'package:money_note_flutter/widgets/labeled_input.dart';
-import 'package:money_note_flutter/widgets/wands_button.dart';
+import 'package:money_note/data/backup_manager.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/utils/style.dart';
+import 'package:money_note/utils/utils.dart';
+import 'package:money_note/widgets/labeled_input.dart';
+import 'package:money_note/widgets/wands_button.dart';
 
 class SettingsPage extends StatefulWidget {
   final int index;
@@ -178,7 +178,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     records = await BackupManager().fetchAllRecords();
                                   } catch (e) {
                                     if (context.mounted) {
-                                      Utils.showPopup(context, '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
+                                      Utils.showPopup(context, '통신 실패', '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
                                     }
                                     return;
                                   }
@@ -186,11 +186,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                   if (records.isNotEmpty) {
                                     await RecordStorage().addRecords(records);
                                     if (context.mounted) {
-                                      Utils.showPopup(context, '내역 로드를 완료했습니다.');
+                                      Utils.showPopup(context, '완료', '내역 로드를 완료했습니다.');
                                     }
                                   } else {
                                     if (context.mounted) {
-                                      Utils.showPopup(context, '로드된 내역이 없습니다.');
+                                      Utils.showPopup(context, '완료', '로드된 내역이 없습니다.');
                                     }
                                   }
                                 },
@@ -207,7 +207,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     await BackupManager().refreshApiKey();
                                   } catch (e) {
                                     if (context.mounted) {
-                                      Utils.showPopup(context, '키를 업데이트하는 데에 실패했습니다.\n${e.toString()}}');
+                                      Utils.showPopup(context, '실패', '키를 업데이트하는 데에 실패했습니다.\n${e.toString()}}');
                                     }
                                     return;
                                   }

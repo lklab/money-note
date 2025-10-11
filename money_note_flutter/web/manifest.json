@@ -1,6 +1,6 @@
 {
-    "name": "money_note_flutter",
-    "short_name": "money_note_flutter",
+    "name": "money_note",
+    "short_name": "money_note",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

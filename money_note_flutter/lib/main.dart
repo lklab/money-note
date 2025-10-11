@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:money_note_flutter/data/asset_storage.dart';
-import 'package:money_note_flutter/data/backup_manager.dart';
-import 'package:money_note_flutter/data/budget_storage.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/pages/main_page.dart';
+import 'package:money_note/data/asset_storage.dart';
+import 'package:money_note/data/backup_manager.dart';
+import 'package:money_note/data/budget_storage.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/pages/main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +59,7 @@ class _MainAppState extends ConsumerState<MainApp> {
       routes: {
         '/main': (BuildContext _) => const MainPage(),
       },
+      debugShowCheckedModeBanner: false,
     );
   }
 }

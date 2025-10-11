@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/data/asset_storage.dart';
-import 'package:money_note_flutter/pages/calculator_page.dart';
-import 'package:money_note_flutter/utils/style.dart';
-import 'package:money_note_flutter/utils/utils.dart';
-import 'package:money_note_flutter/widgets/labeled_input.dart';
+import 'package:money_note/data/asset_storage.dart';
+import 'package:money_note/pages/calculator_page.dart';
+import 'package:money_note/utils/style.dart';
+import 'package:money_note/utils/utils.dart';
+import 'package:money_note/widgets/labeled_input.dart';
 
 class AssetEditPage extends StatefulWidget {
   final Asset? asset;

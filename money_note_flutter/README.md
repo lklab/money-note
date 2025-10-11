@@ -1,3 +1,3 @@
-# money_note_flutter
+# money_note
 
 A new Flutter project.

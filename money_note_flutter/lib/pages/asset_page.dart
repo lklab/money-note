@@ -3,13 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:money_note_flutter/data/asset_storage.dart';
-import 'package:money_note_flutter/data/record_storage.dart';
-import 'package:money_note_flutter/pages/asset_edit_page.dart';
-import 'package:money_note_flutter/pages/asset_group_edit_page.dart';
-import 'package:money_note_flutter/utils/utils.dart';
-import 'package:money_note_flutter/widgets/asset_group_item.dart';
-import 'package:money_note_flutter/widgets/asset_item.dart';
+import 'package:money_note/data/asset_storage.dart';
+import 'package:money_note/data/record_storage.dart';
+import 'package:money_note/pages/asset_edit_page.dart';
+import 'package:money_note/pages/asset_group_edit_page.dart';
+import 'package:money_note/utils/utils.dart';
+import 'package:money_note/widgets/asset_group_item.dart';
+import 'package:money_note/widgets/asset_item.dart';
 
 class AssetPage extends StatefulWidget {
   final int index;

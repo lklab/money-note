@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:money_note_flutter/utils/style.dart';
+import 'package:money_note/utils/style.dart';
 
 class CalculatorPage extends StatefulWidget {
   /// 초기 숫자값(선택). 존재하면 입력식에 미리 채워집니다.

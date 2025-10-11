@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/utils/style.dart';
+import 'package:money_note/utils/style.dart';
 
 class WandsButton extends StatelessWidget {
   final bool isFilled;

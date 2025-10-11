@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:money_note_flutter/data/budget_records.dart';
-import 'package:money_note_flutter/data/budget_storage.dart';
-import 'package:money_note_flutter/pages/budget_group_edit_page.dart';
-import 'package:money_note_flutter/widgets/budget_item_raw.dart';
+import 'package:money_note/data/budget_records.dart';
+import 'package:money_note/data/budget_storage.dart';
+import 'package:money_note/pages/budget_group_edit_page.dart';
+import 'package:money_note/widgets/budget_item_raw.dart';
 
 class BudgetGroupItem extends StatelessWidget {
   final DateTime month;

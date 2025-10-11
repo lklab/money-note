@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:money_note_flutter/data/asset_storage.dart';
-import 'package:money_note_flutter/pages/asset_group_edit_page.dart';
-import 'package:money_note_flutter/utils/utils.dart';
+import 'package:money_note/data/asset_storage.dart';
+import 'package:money_note/pages/asset_group_edit_page.dart';
+import 'package:money_note/utils/utils.dart';
 
 class AssetGroupItem extends StatelessWidget {
   final AssetGroup assetGroup;
