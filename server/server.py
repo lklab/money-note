@@ -98,22 +98,38 @@ def read_json_safely(path: Path) -> Optional[Dict[str, Any]]:
 
 PRUNE_WINDOW_MS = 24 * 3600 * 1000
 
-def prune_files_within_24h_for_month(month: int, new_file_ts_ms: int, new_file_path: Path):
-    """new_file_ts_ms 기준으로 지난 24시간 내(포함)의 기존 파일들을 모두 삭제 (신규 파일 제외)"""
+def prune_24h_policy_for_month(month: int, now_ms: int):
     files = list_month_files(month)
-    cutoff_ms = new_file_ts_ms - PRUNE_WINDOW_MS
+    if not files:
+        return
+
+    cutoff_ms = now_ms - PRUNE_WINDOW_MS
+
+    dated_files = []
     for f in files:
-        if f == new_file_path:
-            continue
         ts_ms = parse_ts_from_filename(f.name)
         if ts_ms is None:
             continue
+        dated_files.append((ts_ms, f))
 
-        if cutoff_ms <= ts_ms < new_file_ts_ms:
-            try:
-                f.unlink(missing_ok=True)
-            except Exception:
-                pass
+    if not dated_files:
+        return
+
+    # older = [(ts, f) for ts, f in dated_files if ts < cutoff_ms]
+    recent = [(ts, f) for ts, f in dated_files if ts >= cutoff_ms]
+
+    if len(recent) <= 1:
+        return
+
+    recent.sort(key=lambda x: x[0])
+    # keep_ts, keep_file = recent[0]
+    to_delete = [f for _, f in recent[1:]]
+
+    for f in to_delete:
+        try:
+            f.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 # -----------------------------
 # 스키마(Pydantic)
@@ -316,25 +332,22 @@ def post_backupdata(
 ):
     check_auth_header(x_api_key)
 
-    # 월 범위 검사
     _check_month_range_or_400(body.month)
-
-    # 배열 상한 검사
     _check_array_limits_or_error(body)
-
-    # 문자열 길이 검사
     _check_string_lengths_backupdata_or_422(body)
 
-    # 동시성 잠금
     mname = month_dir_name(body.month)
     lock = get_month_lock(mname)
 
     with lock:
         month_path = get_month_dir(body.month)
+
         ts_ms = now_epoch_ms()
+
+        prune_24h_policy_for_month(body.month, ts_ms)
+
         out_file = month_path / f"{ts_ms}.json"
 
-        # dict 변환 + amount 문자열화
         to_save = {
             "records": [
                 {
@@ -373,15 +386,11 @@ def post_backupdata(
             ],
         }
 
-        # amount를 안전하게 문자열로 통일
         to_save = _normalize_backupdata_payload(to_save)
 
         out_file.write_text(json.dumps(to_save, ensure_ascii=False, indent=2), encoding="utf-8")
-        prune_files_within_24h_for_month(body.month, ts_ms, out_file)
 
-    saved_rec_count = len(body.records)
-    saved_mb_count = len(body.monthlyBudgets)
-    return {"status": "ok", "saved": {"records": saved_rec_count, "monthlyBudgets": saved_mb_count}}
+    return {"status": "ok", "saved": {"records": len(body.records), "monthlyBudgets": len(body.monthlyBudgets)}}
 
 @app.get("/refresh")
 def refresh_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
