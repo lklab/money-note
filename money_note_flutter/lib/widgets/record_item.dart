@@ -8,21 +8,21 @@ import 'package:money_note/utils/utils.dart';
 
 class RecordItem extends StatelessWidget {
   final Record record;
-  final BudgetIndexer budgetIndexer;
+  final BudgetIndexer? budgetIndexer;
   final bool showDay;
   final Function()? onUpdated;
 
   const RecordItem({
     super.key,
     required this.record,
-    required this.budgetIndexer,
+    this.budgetIndexer,
     this.showDay = true,
     this.onUpdated,
   });
 
   @override
   Widget build(BuildContext context) {
-    String? budgetName = budgetIndexer.budgetMap[record.budget]?.name;
+    String? budgetName = budgetIndexer?.budgetMap[record.budget]?.name;
 
     return Container(
       decoration: BoxDecoration(
@@ -37,7 +37,7 @@ class RecordItem extends StatelessWidget {
               children: [
                 if (showDay)
                 Text(
-                  DateFormat('M.d').format(record.dateTime),
+                  DateFormat('M/d').format(record.dateTime),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
@@ -78,13 +78,13 @@ class RecordItem extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
         minVerticalPadding: 0.0,
         visualDensity: const VisualDensity(vertical: -4),
-        onTap: () async {
+        onTap: budgetIndexer != null && onUpdated != null ? () async {
           final changed = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (_) {
                 return RecordEditPage(
                   record: record,
-                  budgetIndexer: budgetIndexer,
+                  budgetIndexer: budgetIndexer!,
                 );
               },
             ),
@@ -93,7 +93,7 @@ class RecordItem extends StatelessWidget {
           if (changed == true && onUpdated != null) {
             onUpdated!();
           }
-        },
+        } : null,
       ),
     );
   }

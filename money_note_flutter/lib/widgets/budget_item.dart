@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:money_note/data/budget_records.dart';
 import 'package:money_note/data/budget_storage.dart';
+import 'package:money_note/data/record_storage.dart';
 import 'package:money_note/pages/budget_edit_page.dart';
 import 'package:money_note/widgets/budget_item_raw.dart';
 
@@ -24,13 +25,15 @@ class BudgetItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int amount = budget.amount;
-    int used = budgetRecords.budgetAmounts[budget.id] ?? 0;
-    int remain = amount - used;
+    final List<Record> records = budgetRecords.recordMap[budget.id] ?? [];
+    final int amount = budget.amount;
+    final int used = budgetRecords.budgetAmounts[budget.id] ?? 0;
+    final int remain = amount - used;
 
     return BudgetItemRaw(
       isGroup: false,
       name: budget.name,
+      records: records,
       amount: amount,
       used: used,
       remain: remain,

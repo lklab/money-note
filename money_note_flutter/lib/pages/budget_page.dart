@@ -209,6 +209,7 @@ class _BudgetPageState extends State<BudgetPage> {
             child: BudgetItemRaw(
               isGroup: false,
               name: '예산 외',
+              records: _budgetRecords?.noBudgetRecords ?? [],
               amount: 0,
               used: 0,
               remain: _budgetRecords?.noBudgetUsed ?? 0,
