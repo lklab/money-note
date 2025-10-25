@@ -150,12 +150,19 @@ class _RecordsPageState extends State<RecordsPage> {
       recordStorage.clearDirty();
       budgetStorage.clearDirty();
 
+      bool success = true;
+
       try {
         await BackupManager().uploadBackupDataForMonth(_currentMonth, records: records, monthlyBudgets: [monthlyBudget]);
       } catch (e) {
+        success = false;
         if (mounted) {
           Utils.showPopup(context, '통신 실패', '서버와 통신하는 데에 실패했습니다.\n${e.toString()}}');
         }
+      }
+
+      if (mounted && success) {
+        Utils.showSnack(context, '저장되었습니다.');
       }
     }
   }

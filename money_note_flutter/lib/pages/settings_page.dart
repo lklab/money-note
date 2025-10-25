@@ -217,6 +217,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                     }
                                     return;
                                   }
+
+                                  if (context.mounted) {
+                                    Utils.showSnack(context, '키를 업데이트했습니다.');
+                                  }
                                 },
                                 text: '키 업데이트',
                               ),
