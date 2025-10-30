@@ -33,8 +33,11 @@ class Utils {
     return v == 0 ? Style.neutralColor : v > 0 ? (useBlue ? Style.positiveColor : Style.neutralColor) : Style.negativeColor;
   }
 
-  static void showSnack(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  static void showSnack(BuildContext context, String msg, {Duration duration = const Duration(milliseconds: 300)}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      duration: duration,
+    ));
   }
 
   static Future<bool?> confirmDelete(BuildContext context) {
